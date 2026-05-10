@@ -25,8 +25,9 @@ class BottomNavBar extends StatelessWidget {
       ),
       child: SafeArea(
         child: SizedBox(
-          height: 64,
+          height: 80,
           child: Stack(
+            clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
               Row(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
+import 'rate_recipe_sheet.dart';
 
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
@@ -54,7 +55,10 @@ class RecipeCard extends StatelessWidget {
                   right: 12,
                   child: Row(
                     children: [
-                      _IconButton(icon: Icons.star_border_rounded),
+                      GestureDetector(
+                        onTap: () => RateRecipeSheet.show(context, recipe),
+                        child: _IconButton(icon: Icons.star_border_rounded),
+                      ),
                       const SizedBox(width: 6),
                       _IconButton(icon: Icons.blender_outlined),
                     ],
