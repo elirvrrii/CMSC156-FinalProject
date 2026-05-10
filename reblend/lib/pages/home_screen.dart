@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
-import '../widgets/navbar.dart';
 import '../widgets/recipe_card.dart';
 import 'recipe_detail.dart';
+import 'notifications_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,7 +12,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _navIndex = 0;
   int _selectedCategory = 0;
 
   final List<String> _categories = ['main dish', 'side dish', 'appetizer', 'dessert'];
@@ -48,8 +47,21 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.notifications_none_rounded,
-                      size: 24, color: Color(0xFF4A4A4A)),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationsPage(),
+                        ),
+                      );
+                    },
+                    child: const Icon(
+                      Icons.notifications_none_rounded,
+                      size: 24,
+                      color: Color(0xFF4A4A4A),
+                    ),
+                  ),
                   Column(
                     children: const [
                       Text(
@@ -185,10 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _navIndex,
-        onTap: (i) => setState(() => _navIndex = i),
       ),
     );
   }

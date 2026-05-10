@@ -34,15 +34,15 @@ class BottomNavBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _NavItem(
-                    icon: Icons.menu_book_outlined,
-                    label: 'My Recipes',
+                    icon: Icons.home_outlined,
+                    label: 'Home',
                     index: 0,
                     currentIndex: currentIndex,
                     onTap: onTap,
                   ),
                   _NavItem(
-                    icon: Icons.star_border_rounded,
-                    label: 'Ratings',
+                    icon: Icons.menu_book_outlined,
+                    label: 'My Recipes',
                     index: 1,
                     currentIndex: currentIndex,
                     onTap: onTap,

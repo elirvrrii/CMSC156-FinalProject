@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/home_screen.dart';
+import 'pages/main_screen.dart';
 
 void main() {
   runApp(const RecipeApp());
@@ -22,7 +22,7 @@ class RecipeApp extends StatelessWidget {
         fontFamily: 'Georgia', // fallback serif
         scaffoldBackgroundColor: const Color(0xFFF5F1EC),
       ),
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }
