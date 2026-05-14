@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class NotificationsPage extends StatelessWidget {
@@ -5,6 +7,8 @@ class NotificationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1EC),
       body: SafeArea(
@@ -64,16 +68,48 @@ class NotificationsPage extends StatelessWidget {
 
             // ─── Notification List ─────────────────────────────
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: 8,
-                itemBuilder: (context, index) {
-                  return _NotificationCard(
-                    title: _sampleNotifications[index % _sampleNotifications.length],
-                    time: '${index + 1}h ago',
-                  );
-                },
-              ),
+              child: userId.isEmpty
+                  ? const Center(child: Text("Login to see notifications"))
+                  : StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .collection('notifications')
+                          .orderBy('timestamp', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              "No updates yet!",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          );
+                        }
+
+                        final docs = snapshot.data!.docs;
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final data =
+                                docs[index].data() as Map<String, dynamic>;
+                            return _NotificationCard(
+                              title: data['title'] ?? 'New Update',
+                              time: _formatTimestamp(data['timestamp']),
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -88,10 +124,7 @@ class _NotificationCard extends StatelessWidget {
   final String title;
   final String time;
 
-  const _NotificationCard({
-    required this.title,
-    required this.time,
-  });
+  const _NotificationCard({required this.title, required this.time});
 
   @override
   Widget build(BuildContext context) {
@@ -148,12 +181,12 @@ class _NotificationCard extends StatelessWidget {
   }
 }
 
-// ─── Sample Data ─────────────────────────────
-
-final List<String> _sampleNotifications = [
-  "New recipe liked by a user",
-  "Your twist got a new comment",
-  "Someone followed your profile",
-  "Recipe approved by admin",
-  "Weekly recipe summary is ready",
-];
+// Helper to format Firestore timestamp
+String _formatTimestamp(dynamic timestamp) {
+  if (timestamp == null) return "Just now";
+  DateTime date = (timestamp as Timestamp).toDate();
+  final duration = DateTime.now().difference(date);
+  if (duration.inHours < 1) return "${duration.inMinutes}m ago";
+  if (duration.inHours < 24) return "${duration.inHours}h ago";
+  return "${duration.inDays}d ago";
+}
