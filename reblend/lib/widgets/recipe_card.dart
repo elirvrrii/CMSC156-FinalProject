@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' as io;
 import '../models/recipe.dart';
-import 'rate_recipe_sheet.dart';
 
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;

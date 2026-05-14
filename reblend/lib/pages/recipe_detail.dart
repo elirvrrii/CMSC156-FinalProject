@@ -60,22 +60,24 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
               elevation: 0,
             ),
             onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
               Navigator.pop(ctx); // Close dialog
               try {
                 // Call your delete service
                 await RecipeService().deleteRecipe(recipe.id); 
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Recipe deleted successfully'),
                       backgroundColor: Color(0xFF8FA67A),
                     ),
                   );
-                  Navigator.pop(context); // Exit the detail page
+                  navigator.pop(); // Exit the detail page
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to delete: $e'),
                       backgroundColor: const Color(0xFFE57373),
@@ -283,6 +285,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
                         : _RatingsTab(
                             key: const ValueKey(2),
                             reviews: recipe.reviews,
+                            averageRating: recipe.rating,
+                            reviewCount: recipe.reviewCount,
                           ),
               ),
             ),
@@ -992,59 +996,171 @@ class _ProcedureTab extends StatelessWidget {
 
 class _RatingsTab extends StatelessWidget {
   final List<RecipeReview> reviews;
-  const _RatingsTab({super.key, required this.reviews});
+  final double averageRating;
+  final int reviewCount;
+
+  const _RatingsTab({
+    super.key,
+    required this.reviews,
+    required this.averageRating,
+    required this.reviewCount,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasReviews = reviews.isNotEmpty;
+
     return Column(
-      children: reviews.map((review) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFEAE5DE)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '@${review.author}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF8FA67A),
-                        fontWeight: FontWeight.w600,
-                      ),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Average Rating',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF8C827A),
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    averageRating.toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF2E2E2E),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Row(
-                      children: List.generate(5, (i) {
+                      children: List.generate(5, (index) {
+                        final starValue = index + 1;
                         return Icon(
-                          i < review.rating.round()
+                          starValue <= averageRating.round()
                               ? Icons.star_rounded
                               : Icons.star_outline_rounded,
-                          size: 16,
-                          color: const Color(0xFFE8A838),
+                          size: 20,
+                          color: const Color(0xFFC8956C),
                         );
                       }),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$reviewCount ${reviewCount == 1 ? 'rating' : 'ratings'}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B6B6B),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  review.comment,
-                  style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF6B6B6B)),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 16),
+        if (!hasReviews)
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE6DDD4)),
+            ),
+            child: const Text(
+              'No ratings yet. Be the first to leave feedback.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B6B6B),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: reviews.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              final rating = review.rating;
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          review.author.startsWith('@') ? review.author : "@${review.author}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E2E2E),
+                          ),
+                        ),
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                              size: 16,
+                              color: const Color(0xFFC8956C),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      review.comment,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF6B6B6B),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
     );
   }
 }

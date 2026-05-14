@@ -16,6 +16,23 @@ class RecipeIngredient {
     this.status = IngredientStatus.unchanged,
     this.originalLabel,
   });
+
+  // Safe factory constructor to parse strings or objects from Firestore
+  factory RecipeIngredient.fromDynamic(dynamic item) {
+    if (item is String) {
+      return RecipeIngredient(label: item, status: IngredientStatus.unchanged);
+    } else if (item is Map) {
+      return RecipeIngredient(
+        label: item['label'] ?? '',
+        status: IngredientStatus.values.firstWhere(
+          (e) => e.name == (item['status'] ?? 'unchanged'),
+          orElse: () => IngredientStatus.unchanged,
+        ),
+        originalLabel: item['originalLabel'],
+      );
+    }
+    return const RecipeIngredient(label: '');
+  }
 }
 
 // ── Typed step ─────────────────────────────────────────────────────────────
@@ -30,6 +47,23 @@ class RecipeStep {
     this.status = StepStatus.unchanged,
     this.originalText,
   });
+
+  // Safe factory constructor to parse strings or objects from Firestore
+  factory RecipeStep.fromDynamic(dynamic item) {
+    if (item is String) {
+      return RecipeStep(text: item, status: StepStatus.unchanged);
+    } else if (item is Map) {
+      return RecipeStep(
+        text: item['text'] ?? '',
+        status: StepStatus.values.firstWhere(
+          (e) => e.name == (item['status'] ?? 'unchanged'),
+          orElse: () => StepStatus.unchanged,
+        ),
+        originalText: item['originalText'],
+      );
+    }
+    return const RecipeStep(text: '');
+  }
 }
 
 // ── Review ─────────────────────────────────────────────────────────────────
@@ -44,6 +78,15 @@ class RecipeReview {
     required this.rating,
     required this.comment,
   });
+
+  // Converts a Firestore Map safely into a RecipeReview object
+  factory RecipeReview.fromJson(Map<String, dynamic> json) {
+    return RecipeReview(
+      author: json['author'] ?? 'Chef',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      comment: json['comment'] ?? '',
+    );
+  }
 }
 
 // ── Recipe ─────────────────────────────────────────────────────────────────
@@ -86,4 +129,55 @@ class Recipe {
     required this.steps,
     required this.reviews,
   });
+
+  // ─── ADD THIS FACTORY CONSTRUCTOR TO FIX YOUR CRASHES ───
+  factory Recipe.fromJson(Map<String, dynamic> json, String documentId) {
+    // Parse ingredients safely
+    var rawIngredients = json['ingredients'] as List<dynamic>? ?? [];
+    List<RecipeIngredient> parsedIngredients = rawIngredients
+        .map((item) => RecipeIngredient.fromDynamic(item))
+        .toList();
+
+    // Parse steps safely
+    var rawSteps = json['steps'] as List<dynamic>? ?? [];
+    List<RecipeStep> parsedSteps = rawSteps
+        .map((item) => RecipeStep.fromDynamic(item))
+        .toList();
+
+    // Parse reviews safely into your RecipeReview objects
+    var rawReviews = json['reviews'] as List<dynamic>? ?? [];
+    List<RecipeReview> parsedReviews = rawReviews
+        .whereType<Map>()
+        .map((item) {
+          final reviewMap = Map<String, dynamic>.from(item);
+          final ratingValue = reviewMap['rating'];
+
+          return RecipeReview(
+            author: reviewMap['author'] ?? 'Chef',
+            rating: ratingValue is num ? ratingValue.toDouble() : 0.0,
+            comment: reviewMap['comment'] ?? '',
+          );
+        })
+        .toList();
+
+    return Recipe(
+      id: documentId,
+      name: json['name'] ?? '',
+      category: json['category'] ?? '',
+      author: json['author'] ?? 'Unknown Author',
+      userId: json['userId'],
+      cookTimeMinutes: json['cookTimeMinutes'] ?? 0,
+      date: json['date'] ?? '',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviewCount: json['reviewCount'] ?? 0,
+      imageUrl: json['imageUrl'] ?? '',
+      hasTwist: json['hasTwist'] ?? false,
+      parentRecipeId: json['parentRecipeId'],
+      parentRecipeName: json['parentRecipeName'],
+      parentRecipeAuthor: json['parentRecipeAuthor'],
+      ingredients: parsedIngredients,
+      steps: parsedSteps,
+      reviews: parsedReviews, // 👈 Now correctly typed!
+    );
+  }
 }

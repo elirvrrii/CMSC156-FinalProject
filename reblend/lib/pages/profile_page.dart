@@ -34,8 +34,9 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     // If no user is logged in, show a simple error
-    if (userId.isEmpty)
+    if (userId.isEmpty) {
       return const Scaffold(body: Center(child: Text("No user found")));
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1EC),

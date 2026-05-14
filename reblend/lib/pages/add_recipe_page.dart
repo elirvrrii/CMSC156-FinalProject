@@ -125,6 +125,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
       );
       if (image != null) {
         setState(() => _selectedImagePath = image.path);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Image selected'),
@@ -133,7 +134,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
         );
       }
     } catch (e) {
-      print('Image picker error: $e');
+      debugPrint('Image picker error: $e');
       if (mounted) {
         _showError('Unable to access image picker. Please check permissions.');
       }

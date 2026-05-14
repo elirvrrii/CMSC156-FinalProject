@@ -203,14 +203,7 @@ class RecipeService {
     final steps =
         stepTexts.map((text) => RecipeStep(text: text)).toList();
 
-    final reviewDocs = List<Map<String, dynamic>>.from(data['reviews'] ?? []);
-    final reviews = reviewDocs
-        .map((reviewData) => RecipeReview(
-              author: reviewData['author'] ?? 'Anonymous',
-              rating: (reviewData['rating'] ?? 0).toDouble(),
-              comment: reviewData['comment'] ?? '',
-            ))
-        .toList();
+    final reviews = _parseReviews(data['reviews']);
 
     return Recipe(
       id: doc.id,
@@ -286,5 +279,74 @@ class RecipeService {
     } catch (e) {
       throw Exception('Failed to delete recipe: $e');
     }
+  }
+
+  Future<void> addRecipeReview({
+      required String recipeId,
+      required double rating,
+      required String comment,
+    }) async {
+      final uid = _auth.currentUser?.uid;
+      if (uid == null) throw Exception('Must be logged in to rate.');
+
+      // Fetch the current recipe data
+      final recipeRef = _firestore.collection('recipes').doc(recipeId);
+      final recipeDoc = await recipeRef.get();
+      
+      if (!recipeDoc.exists) throw Exception('Recipe not found');
+      final recipeData = recipeDoc.data() as Map<String, dynamic>;
+      
+      // Strict backend check: Enforce owner constraint
+      if (recipeData['userId'] == uid) {
+        throw Exception('You cannot rate your own recipe!');
+      }
+
+      final email = _auth.currentUser?.email;
+      final authorName = email != null ? email.split('@')[0] : 'Chef';
+
+      // Create the review object
+      final newReview = {
+        'author': authorName,
+        'rating': rating,
+        'comment': comment,
+        'userId': uid,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+
+      // Calculate the new average rating and review count
+      final List<RecipeReview> currentReviews = _parseReviews(recipeData['reviews']);
+      int newReviewCount = currentReviews.length + 1;
+
+      double totalRating = rating;
+      for (final review in currentReviews) {
+        totalRating += review.rating;
+      }
+      double newAvgRating = totalRating / newReviewCount;
+
+      // Push it to Firestore!
+      await recipeRef.update({
+        'reviews': FieldValue.arrayUnion([newReview]),
+        'rating': newAvgRating,
+        'reviewCount': newReviewCount,
+      });
+    }
+
+  List<RecipeReview> _parseReviews(dynamic reviewsValue) {
+    final rawReviews = reviewsValue is List ? reviewsValue : const [];
+
+    return rawReviews
+        .whereType<Map>()
+        .map((reviewData) {
+          final reviewMap = Map<String, dynamic>.from(reviewData);
+          final ratingValue = reviewMap['rating'];
+          final parsedRating = ratingValue is num ? ratingValue.toDouble() : 0.0;
+
+          return RecipeReview(
+            author: reviewMap['author'] ?? 'Anonymous',
+            rating: parsedRating,
+            comment: reviewMap['comment'] ?? '',
+          );
+        })
+        .toList();
   }
 }

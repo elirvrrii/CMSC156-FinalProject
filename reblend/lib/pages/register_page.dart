@@ -43,6 +43,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Navigator.of(context).pop();
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.message ?? "An error occurred")));
