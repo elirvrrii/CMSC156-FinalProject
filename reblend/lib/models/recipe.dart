@@ -17,21 +17,26 @@ class RecipeIngredient {
     this.originalLabel,
   });
 
-  // Safe factory constructor to parse strings or objects from Firestore
-  factory RecipeIngredient.fromDynamic(dynamic item) {
-    if (item is String) {
-      return RecipeIngredient(label: item, status: IngredientStatus.unchanged);
-    } else if (item is Map) {
-      return RecipeIngredient(
-        label: item['label'] ?? '',
-        status: IngredientStatus.values.firstWhere(
-          (e) => e.name == (item['status'] ?? 'unchanged'),
-          orElse: () => IngredientStatus.unchanged,
-        ),
-        originalLabel: item['originalLabel'],
-      );
+  static IngredientStatus _parseStatus(dynamic value) {
+    return IngredientStatus.values.firstWhere(
+      (status) => status.name == value,
+      orElse: () => IngredientStatus.unchanged,
+    );
+  }
+
+  // Safe factory constructor to parse strings or objects from Firestore.
+  factory RecipeIngredient.fromDynamic(dynamic item) => RecipeIngredient.fromMap(item);
+
+  factory RecipeIngredient.fromMap(dynamic map) {
+    if (map is String) {
+      return RecipeIngredient(label: map, status: IngredientStatus.unchanged);
     }
-    return const RecipeIngredient(label: '');
+    final data = map is Map ? Map<String, dynamic>.from(map) : <String, dynamic>{};
+    return RecipeIngredient(
+      label: data['label'] ?? '',
+      status: _parseStatus(data['status'] ?? 'unchanged'),
+      originalLabel: data['originalLabel'],
+    );
   }
 }
 
@@ -48,21 +53,26 @@ class RecipeStep {
     this.originalText,
   });
 
-  // Safe factory constructor to parse strings or objects from Firestore
-  factory RecipeStep.fromDynamic(dynamic item) {
-    if (item is String) {
-      return RecipeStep(text: item, status: StepStatus.unchanged);
-    } else if (item is Map) {
-      return RecipeStep(
-        text: item['text'] ?? '',
-        status: StepStatus.values.firstWhere(
-          (e) => e.name == (item['status'] ?? 'unchanged'),
-          orElse: () => StepStatus.unchanged,
-        ),
-        originalText: item['originalText'],
-      );
+  static StepStatus _parseStatus(dynamic value) {
+    return StepStatus.values.firstWhere(
+      (status) => status.name == value,
+      orElse: () => StepStatus.unchanged,
+    );
+  }
+
+  // Safe factory constructor to parse strings or objects from Firestore.
+  factory RecipeStep.fromDynamic(dynamic item) => RecipeStep.fromMap(item);
+
+  factory RecipeStep.fromMap(dynamic map) {
+    if (map is String) {
+      return RecipeStep(text: map, status: StepStatus.unchanged);
     }
-    return const RecipeStep(text: '');
+    final data = map is Map ? Map<String, dynamic>.from(map) : <String, dynamic>{};
+    return RecipeStep(
+      text: data['text'] ?? '',
+      status: _parseStatus(data['status'] ?? 'unchanged'),
+      originalText: data['originalText'],
+    );
   }
 }
 
@@ -79,12 +89,14 @@ class RecipeReview {
     required this.comment,
   });
 
-  // Converts a Firestore Map safely into a RecipeReview object
-  factory RecipeReview.fromJson(Map<String, dynamic> json) {
+  // Converts a Firestore Map safely into a RecipeReview object.
+  factory RecipeReview.fromJson(Map<String, dynamic> json) => RecipeReview.fromMap(json);
+
+  factory RecipeReview.fromMap(Map<String, dynamic> map) {
     return RecipeReview(
-      author: json['author'] ?? 'Chef',
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      comment: json['comment'] ?? '',
+      author: map['author'] ?? 'Chef',
+      rating: (map['rating'] ?? 0.0).toDouble(),
+      comment: map['comment'] ?? '',
     );
   }
 }
@@ -130,54 +142,37 @@ class Recipe {
     required this.reviews,
   });
 
-  // ─── ADD THIS FACTORY CONSTRUCTOR TO FIX YOUR CRASHES ───
+  // Build a Recipe from a Firestore document payload.
   factory Recipe.fromJson(Map<String, dynamic> json, String documentId) {
-    // Parse ingredients safely
-    var rawIngredients = json['ingredients'] as List<dynamic>? ?? [];
-    List<RecipeIngredient> parsedIngredients = rawIngredients
-        .map((item) => RecipeIngredient.fromDynamic(item))
-        .toList();
+    return Recipe.fromFirestore(documentId, json);
+  }
 
-    // Parse steps safely
-    var rawSteps = json['steps'] as List<dynamic>? ?? [];
-    List<RecipeStep> parsedSteps = rawSteps
-        .map((item) => RecipeStep.fromDynamic(item))
-        .toList();
-
-    // Parse reviews safely into your RecipeReview objects
-    var rawReviews = json['reviews'] as List<dynamic>? ?? [];
-    List<RecipeReview> parsedReviews = rawReviews
-        .whereType<Map>()
-        .map((item) {
-          final reviewMap = Map<String, dynamic>.from(item);
-          final ratingValue = reviewMap['rating'];
-
-          return RecipeReview(
-            author: reviewMap['author'] ?? 'Chef',
-            rating: ratingValue is num ? ratingValue.toDouble() : 0.0,
-            comment: reviewMap['comment'] ?? '',
-          );
-        })
-        .toList();
+  factory Recipe.fromFirestore(String id, Map<String, dynamic> data) {
+    final rawIngredients = data['ingredients'] as List<dynamic>? ?? const [];
+    final rawSteps = data['steps'] as List<dynamic>? ?? const [];
+    final rawReviews = data['reviews'] as List<dynamic>? ?? const [];
 
     return Recipe(
-      id: documentId,
-      name: json['name'] ?? '',
-      category: json['category'] ?? '',
-      author: json['author'] ?? 'Unknown Author',
-      userId: json['userId'],
-      cookTimeMinutes: json['cookTimeMinutes'] ?? 0,
-      date: json['date'] ?? '',
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      reviewCount: json['reviewCount'] ?? 0,
-      imageUrl: json['imageUrl'] ?? '',
-      hasTwist: json['hasTwist'] ?? false,
-      parentRecipeId: json['parentRecipeId'],
-      parentRecipeName: json['parentRecipeName'],
-      parentRecipeAuthor: json['parentRecipeAuthor'],
-      ingredients: parsedIngredients,
-      steps: parsedSteps,
-      reviews: parsedReviews, // 👈 Now correctly typed!
+      id: id,
+      name: data['name'] ?? '',
+      category: data['category'] ?? '',
+      author: data['author'] ?? 'Unknown',
+      userId: data['userId'],
+      date: data['date'] ?? '',
+      rating: (data['rating'] ?? 0.0).toDouble(),
+      cookTimeMinutes: data['cookTimeMinutes'] ?? 0,
+      reviewCount: data['reviewCount'] ?? 0,
+      imageUrl: data['imageUrl'] ?? '',
+      hasTwist: data['hasTwist'] ?? false,
+      parentRecipeId: data['parentRecipeId'],
+      parentRecipeName: data['parentRecipeName'],
+      parentRecipeAuthor: data['parentRecipeAuthor'],
+      ingredients: rawIngredients.map((item) => RecipeIngredient.fromDynamic(item)).toList(),
+      steps: rawSteps.map((item) => RecipeStep.fromDynamic(item)).toList(),
+      reviews: rawReviews
+          .whereType<Map>()
+          .map((review) => RecipeReview.fromMap(Map<String, dynamic>.from(review)))
+          .toList(),
     );
   }
 }
