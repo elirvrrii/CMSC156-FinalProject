@@ -7,11 +7,13 @@ import 'rate_recipe_sheet.dart';
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final VoidCallback onTap;
+  final VoidCallback? onRatingTap;
 
   const RecipeCard({
     super.key,
     required this.recipe,
     required this.onTap,
+    this.onRatingTap,
   });
 
   @override
@@ -48,7 +50,7 @@ class RecipeCard extends StatelessWidget {
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => RateRecipeSheet.show(context, recipe),
+                        onTap: onRatingTap,
                         child: _IconButton(icon: Icons.star_border_rounded),
                       ),
                       const SizedBox(width: 6),

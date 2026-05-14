@@ -4,6 +4,9 @@ import '../widgets/recipe_card.dart';
 import '../services/recipe_service.dart';
 import 'recipe_detail.dart';
 import 'notifications_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'main_screen.dart';
+import '../widgets/rate_recipe_sheet.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -278,9 +281,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: const EdgeInsets.only(top: 16, bottom: 16),
                               itemCount: _filteredRecipes.length,
                               itemBuilder: (context, index) {
+                                final targetRecipe = _filteredRecipes[index];
                                 return RecipeCard(
                                   recipe: _filteredRecipes[index],
                                   onTap: () => _openRecipe(_filteredRecipes[index]),
+                                  onRatingTap: () {
+                                          // Check authentication
+                                          if (FirebaseAuth.instance.currentUser == null) {
+                                            
+                                            // ─── Find your existing MainScreenState and use its method! ───
+                                            final mainScreenState = context.findAncestorStateOfType<MainScreenState>();
+                                            mainScreenState?.showLoginRequiredDialog();
+                                            
+                                          } else {
+                                            // If logged in, show the sheet like normal
+                                            RateRecipeSheet.show(context, targetRecipe);
+                                          }
+                                  },
                                 );
                               },
                             ),

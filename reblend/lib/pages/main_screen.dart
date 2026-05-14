@@ -12,10 +12,10 @@ class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen> createState() => MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
@@ -38,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
 
     // For all other tabs, check if the user is logged in
     if (!_isLoggedIn) {
-      _showLoginRequiredDialog();
+      showLoginRequiredDialog();
       return;
     }
 
@@ -55,7 +55,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   // Popup dialog box
-  void _showLoginRequiredDialog() {
+  void showLoginRequiredDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
