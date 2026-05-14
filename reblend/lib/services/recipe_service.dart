@@ -25,7 +25,8 @@ class RecipeService {
 
       // Get current user if userId not provided
       final uid = userId ?? _auth.currentUser?.uid;
-      final authorName = author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
+      final authorName =
+          author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
 
       final recipeData = {
         'name': name,
@@ -47,7 +48,9 @@ class RecipeService {
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      final docRef = await _firestore.collection(_recipesCollection).add(recipeData);
+      final docRef = await _firestore
+          .collection(_recipesCollection)
+          .add(recipeData);
 
       if (uid != null) {
         await _firestore.collection('users').doc(uid).set({
@@ -64,8 +67,9 @@ class RecipeService {
   /// Get all recipes from Firestore
   Future<List<Recipe>> getAllRecipes() async {
     try {
-      final querySnapshot =
-          await _firestore.collection(_recipesCollection).get();
+      final querySnapshot = await _firestore
+          .collection(_recipesCollection)
+          .get();
       return querySnapshot.docs.map((doc) => _documentToRecipe(doc)).toList();
     } catch (e) {
       throw Exception('Failed to fetch recipes: $e');
@@ -123,8 +127,10 @@ class RecipeService {
   /// Get a single recipe by ID
   Future<Recipe?> getRecipeById(String recipeId) async {
     try {
-      final doc =
-          await _firestore.collection(_recipesCollection).doc(recipeId).get();
+      final doc = await _firestore
+          .collection(_recipesCollection)
+          .doc(recipeId)
+          .get();
       if (doc.exists) {
         return _documentToRecipe(doc);
       }
@@ -140,7 +146,10 @@ class RecipeService {
     required String twistName,
     required List<RecipeIngredient> modifiedIngredients,
     required List<RecipeStep> modifiedSteps,
-    String? author,
+    required String category,
+    required String imageUrl,
+    required int cookTimeMinutes,
+    required String author,
     String? userId,
   }) async {
     try {
@@ -153,18 +162,17 @@ class RecipeService {
       final dateStr =
           '${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}/${now.year}';
       final uid = userId ?? _auth.currentUser?.uid;
-      final authorName = author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
+      final authorName =
+          author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
 
       final twistData = {
         'name': twistName,
-        'category': parentRecipe.category,
-        'cookTimeMinutes': 0, // Could be updated by user
+        'category': category,
+        'cookTimeMinutes': cookTimeMinutes,
         'author': authorName,
         'userId': uid,
         'date': dateStr,
-        'imageUrl': '',
-        'ingredients': modifiedIngredients.map((ing) => ing.label).toList(),
-        'steps': modifiedSteps.map((step) => step.text).toList(),
+        'imageUrl': imageUrl,
         'rating': 0.0,
         'reviewCount': 0,
         'hasTwist': true,
@@ -173,9 +181,30 @@ class RecipeService {
         'parentRecipeAuthor': parentRecipe.author,
         'reviews': [],
         'createdAt': FieldValue.serverTimestamp(),
+
+        // Save ingredients and steps as Maps to preserve status
+        'ingredients': modifiedIngredients
+            .map(
+              (ing) => {
+                'label': ing.label,
+                'status': ing.status?.name ?? 'unchanged',
+              },
+            )
+            .toList(),
+
+        'steps': modifiedSteps
+            .map(
+              (step) => {
+                'text': step.text,
+                'status': step.status?.name ?? 'unchanged',
+              },
+            )
+            .toList(),
       };
 
-      final docRef = await _firestore.collection(_recipesCollection).add(twistData);
+      final docRef = await _firestore
+          .collection(_recipesCollection)
+          .add(twistData);
 
       if (uid != null) {
         await _firestore.collection('users').doc(uid).set({
@@ -193,23 +222,39 @@ class RecipeService {
   Recipe _documentToRecipe(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
-    final ingredientLabels = List<String>.from(data['ingredients'] ?? []);
-    final ingredients = ingredientLabels
-        .map((label) => RecipeIngredient(label: label))
-        .toList();
+    // Handle Ingredients (check if String or Map)
+    final rawIngredients = data['ingredients'] as List<dynamic>? ?? [];
+    final ingredients = rawIngredients.map((item) {
+      if (item is Map) {
+        return RecipeIngredient(
+          label: item['label'] ?? '',
+          status: IngredientStatus.values.byName(item['status'] ?? 'unchanged'),
+        );
+      }
+      return RecipeIngredient(label: item.toString()); // Fallback for old data
+    }).toList();
 
-    final stepTexts = List<String>.from(data['steps'] ?? []);
-
-    final steps =
-        stepTexts.map((text) => RecipeStep(text: text)).toList();
+    // Handle Steps (check if String or Map)
+    final rawSteps = data['steps'] as List<dynamic>? ?? [];
+    final steps = rawSteps.map((item) {
+      if (item is Map) {
+        return RecipeStep(
+          text: item['text'] ?? '',
+          status: StepStatus.values.byName(item['status'] ?? 'unchanged'),
+        );
+      }
+      return RecipeStep(text: item.toString()); // Fallback for old data
+    }).toList();
 
     final reviewDocs = List<Map<String, dynamic>>.from(data['reviews'] ?? []);
     final reviews = reviewDocs
-        .map((reviewData) => RecipeReview(
-              author: reviewData['author'] ?? 'Anonymous',
-              rating: (reviewData['rating'] ?? 0).toDouble(),
-              comment: reviewData['comment'] ?? '',
-            ))
+        .map(
+          (reviewData) => RecipeReview(
+            author: reviewData['author'] ?? 'Anonymous',
+            rating: (reviewData['rating'] ?? 0).toDouble(),
+            comment: reviewData['comment'] ?? '',
+          ),
+        )
         .toList();
 
     return Recipe(
@@ -263,8 +308,11 @@ class RecipeService {
   Future<void> deleteRecipe(String recipeId) async {
     try {
       // 1. Fetch the recipe first to see who owns it and check if it's a twist
-      final recipeDoc = await _firestore.collection(_recipesCollection).doc(recipeId).get();
-      
+      final recipeDoc = await _firestore
+          .collection(_recipesCollection)
+          .doc(recipeId)
+          .get();
+
       if (!recipeDoc.exists) {
         throw Exception('Recipe not found');
       }

@@ -16,6 +16,18 @@ class RecipeIngredient {
     this.status = IngredientStatus.unchanged,
     this.originalLabel,
   });
+
+  // Convert Firestore Map to Object
+  factory RecipeIngredient.fromMap(dynamic map) {
+    if (map is String) {
+      return RecipeIngredient(label: map);
+    }
+    return RecipeIngredient(
+      label: map['label'] ?? '',
+      status: IngredientStatus.values.byName(map['status'] ?? 'unchanged'),
+      originalLabel: map['originalLabel'],
+    );
+  }
 }
 
 // ── Typed step ─────────────────────────────────────────────────────────────
@@ -30,6 +42,17 @@ class RecipeStep {
     this.status = StepStatus.unchanged,
     this.originalText,
   });
+
+  factory RecipeStep.fromMap(dynamic map) {
+    if (map is String) {
+      return RecipeStep(text: map);
+    }
+    return RecipeStep(
+      text: map['text'] ?? '',
+      status: StepStatus.values.byName(map['status'] ?? 'unchanged'),
+      originalText: map['originalText'],
+    );
+  }
 }
 
 // ── Review ─────────────────────────────────────────────────────────────────
@@ -44,6 +67,14 @@ class RecipeReview {
     required this.rating,
     required this.comment,
   });
+
+  factory RecipeReview.fromMap(Map<String, dynamic> map) {
+    return RecipeReview(
+      author: map['author'] ?? 'Anonymous',
+      rating: (map['rating'] ?? 0).toDouble(),
+      comment: map['comment'] ?? '',
+    );
+  }
 }
 
 // ── Recipe ─────────────────────────────────────────────────────────────────
@@ -86,4 +117,32 @@ class Recipe {
     required this.steps,
     required this.reviews,
   });
+
+  factory Recipe.fromFirestore(String id, Map<String, dynamic> data) {
+    return Recipe(
+      id: id,
+      name: data['name'] ?? '',
+      category: data['category'] ?? '',
+      author: data['author'] ?? 'Unknown',
+      userId: data['userId'],
+      date: data['date'] ?? '',
+      rating: (data['rating'] ?? 0).toDouble(),
+      cookTimeMinutes: data['cookTimeMinutes'] ?? 0,
+      reviewCount: data['reviewCount'] ?? 0,
+      imageUrl: data['imageUrl'] ?? '',
+      hasTwist: data['hasTwist'] ?? false,
+      parentRecipeId: data['parentRecipeId'],
+      parentRecipeName: data['parentRecipeName'],
+      parentRecipeAuthor: data['parentRecipeAuthor'],
+      ingredients: (data['ingredients'] as List? ?? [])
+          .map((i) => RecipeIngredient.fromMap(i))
+          .toList(),
+      steps: (data['steps'] as List? ?? [])
+          .map((s) => RecipeStep.fromMap(s))
+          .toList(),
+      reviews: (data['reviews'] as List? ?? [])
+          .map((r) => RecipeReview.fromMap(Map<String, dynamic>.from(r)))
+          .toList(),
+    );
+  }
 }

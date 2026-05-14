@@ -20,7 +20,9 @@ class AddRecipePage extends StatefulWidget {
         pageBuilder: (_, animation, _) => const AddRecipePage(),
         transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              .animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
           child: child,
         ),
         transitionDuration: const Duration(milliseconds: 320),
@@ -35,7 +37,9 @@ class AddRecipePage extends StatefulWidget {
         pageBuilder: (_, animation, _) => AddRecipePage(recipeToEdit: recipe),
         transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              .animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
           child: child,
         ),
         transitionDuration: const Duration(milliseconds: 320),
@@ -62,14 +66,15 @@ class _AddRecipePageState extends State<AddRecipePage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Pre-fill data if we are editing an existing recipe
     if (widget.recipeToEdit != null) {
       final r = widget.recipeToEdit!;
       _nameController.text = r.name;
       _cookTimeController.text = r.cookTimeMinutes.toString();
       _selectedCategory = r.category;
-      _selectedImagePath = r.imageUrl; // This will bypass the File check gracefully
+      _selectedImagePath =
+          r.imageUrl; // This will bypass the File check gracefully
 
       _ingredients.clear();
       for (var ing in r.ingredients) {
@@ -165,10 +170,12 @@ class _AddRecipePageState extends State<AddRecipePage> {
     // Filter out empty ingredients
     final validIngredients = _ingredients
         .where((ing) => ing.nameController.text.trim().isNotEmpty)
-        .map((ing) => RecipeIngredient(
-              label:
-                  '${ing.nameController.text} (${ing.quantityController.text})',
-            ))
+        .map(
+          (ing) => RecipeIngredient(
+            label:
+                '${ing.nameController.text} (${ing.quantityController.text})',
+          ),
+        )
         .toList();
 
     if (validIngredients.isEmpty) {
@@ -192,7 +199,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
     try {
       final cookTimeMinutes = int.tryParse(_cookTimeController.text) ?? 0;
       final currentUser = FirebaseAuth.instance.currentUser;
-      
+
       if (widget.recipeToEdit != null) {
         await _recipeService.updateRecipe(
           recipeId: widget.recipeToEdit!.id,
@@ -262,8 +269,11 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 20, color: Color(0xFF4A4A4A)),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: Color(0xFF4A4A4A),
+                        ),
                       ),
                       const Expanded(
                         child: Text(
@@ -304,15 +314,20 @@ class _AddRecipePageState extends State<AddRecipePage> {
                             ),
                             image: _selectedImagePath != null && !kIsWeb
                                 ? DecorationImage(
-                                    image: FileImage(io.File(_selectedImagePath!)),
+                                    image: FileImage(
+                                      io.File(_selectedImagePath!),
+                                    ),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
                           ),
                           child: _selectedImagePath == null
                               ? const Center(
-                                  child: Icon(Icons.image_outlined,
-                                      size: 48, color: Color(0xFFC8956C)),
+                                  child: Icon(
+                                    Icons.image_outlined,
+                                    size: 48,
+                                    color: Color(0xFFC8956C),
+                                  ),
                                 )
                               : null,
                         ),
@@ -326,8 +341,11 @@ class _AddRecipePageState extends State<AddRecipePage> {
                               color: Color(0xFFC8956C),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.add,
-                                color: Colors.white, size: 16),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
                       ],
@@ -336,7 +354,9 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _selectedImagePath == null ? 'Recipe image *' : 'Change image',
+                  _selectedImagePath == null
+                      ? 'Recipe image *'
+                      : 'Change image',
                   style: TextStyle(
                     fontSize: 12,
                     color: _selectedImagePath == null
@@ -385,27 +405,35 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     // Ingredients
                     const _SectionLabel(label: 'Ingredients'),
                     const SizedBox(height: 8),
-                    ...List.generate(_ingredients.length, (i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _IngredientRow(
-                        entry: _ingredients[i],
-                        onAdd: i == _ingredients.length - 1 ? _addIngredient : null,
+                    ...List.generate(
+                      _ingredients.length,
+                      (i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _IngredientRow(
+                          entry: _ingredients[i],
+                          onAdd: i == _ingredients.length - 1
+                              ? _addIngredient
+                              : null,
+                        ),
                       ),
-                    )),
+                    ),
 
                     const SizedBox(height: 16),
 
                     // Steps
                     const _SectionLabel(label: 'Steps'),
                     const SizedBox(height: 8),
-                    ...List.generate(_steps.length, (i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _StepRow(
-                        entry: _steps[i],
-                        stepNumber: i + 1,
-                        onAdd: i == _steps.length - 1 ? _addStep : null,
+                    ...List.generate(
+                      _steps.length,
+                      (i) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _StepRow(
+                          entry: _steps[i],
+                          stepNumber: i + 1,
+                          onAdd: i == _steps.length - 1 ? _addStep : null,
+                        ),
                       ),
-                    )),
+                    ),
 
                     const SizedBox(height: 32),
                     _isLoading
@@ -441,11 +469,12 @@ class AddTwistPage extends StatefulWidget {
   static void show(BuildContext context, Recipe recipe) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (_, animation, _) =>
-            AddTwistPage(originalRecipe: recipe),
+        pageBuilder: (_, animation, _) => AddTwistPage(originalRecipe: recipe),
         transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-              .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+              .animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
           child: child,
         ),
         transitionDuration: const Duration(milliseconds: 320),
@@ -468,7 +497,12 @@ class _AddTwistPageState extends State<AddTwistPage> {
   void initState() {
     super.initState();
     _ingredients = widget.originalRecipe.ingredients
-        .map((i) => _TwistIngredientEntry(label: i.label, status: IngredientStatus.unchanged))
+        .map(
+          (i) => _TwistIngredientEntry(
+            label: i.label,
+            status: IngredientStatus.unchanged,
+          ),
+        )
         .toList();
     _steps = widget.originalRecipe.steps
         .map((s) => _TwistStepEntry(text: s.text, status: StepStatus.unchanged))
@@ -487,27 +521,31 @@ class _AddTwistPageState extends State<AddTwistPage> {
     super.dispose();
   }
 
-  void _addIngredient() => setState(() => _ingredients
-      .add(_TwistIngredientEntry(label: '', status: IngredientStatus.added)));
+  void _addIngredient() => setState(
+    () => _ingredients.add(
+      _TwistIngredientEntry(label: '', status: IngredientStatus.added),
+    ),
+  );
 
-  void _addStep() => setState(() =>
-      _steps.add(_TwistStepEntry(text: '', status: StepStatus.added)));
+  void _addStep() => setState(
+    () => _steps.add(_TwistStepEntry(text: '', status: StepStatus.added)),
+  );
 
   void _removeIngredient(int i) => setState(() {
-        if (_ingredients[i].status == IngredientStatus.added) {
-          _ingredients.removeAt(i);
-        } else {
-          _ingredients[i].status = IngredientStatus.removed;
-        }
-      });
+    if (_ingredients[i].status == IngredientStatus.added) {
+      _ingredients.removeAt(i);
+    } else {
+      _ingredients[i].status = IngredientStatus.removed;
+    }
+  });
 
   void _removeStep(int i) => setState(() {
-        if (_steps[i].status == StepStatus.added) {
-          _steps.removeAt(i);
-        } else {
-          _steps[i].status = StepStatus.removed;
-        }
-      });
+    if (_steps[i].status == StepStatus.added) {
+      _steps.removeAt(i);
+    } else {
+      _steps[i].status = StepStatus.removed;
+    }
+  });
 
   void _restoreIngredient(int i) =>
       setState(() => _ingredients[i].status = IngredientStatus.unchanged);
@@ -525,48 +563,45 @@ class _AddTwistPageState extends State<AddTwistPage> {
     // Get modified ingredients and steps
     final modifiedIngredients = _ingredients
         .where((ing) => ing.status != IngredientStatus.removed)
-        .map((ing) => RecipeIngredient(
-              label: ing.controller.text,
-              status: ing.status == IngredientStatus.added
-                  ? IngredientStatus.added
-                  : ing.status == IngredientStatus.modified
-                      ? IngredientStatus.modified
-                      : IngredientStatus.unchanged,
-            ))
+        .map(
+          (ing) => RecipeIngredient(
+            label: ing.controller.text.trim(),
+            status: ing.status,
+          ),
+        )
         .toList();
 
     final modifiedSteps = _steps
         .where((step) => step.status != StepStatus.removed)
-        .map((step) => RecipeStep(
-              text: step.controller.text,
-              status: step.status == StepStatus.added
-                  ? StepStatus.added
-                  : step.status == StepStatus.modified
-                      ? StepStatus.modified
-                      : StepStatus.unchanged,
-            ))
+        .map(
+          (step) => RecipeStep(
+            text: step.controller.text.trim(),
+            status: step.status,
+          ),
+        )
         .toList();
 
-    if (modifiedIngredients.isEmpty) {
-      _showError('Please have at least one ingredient');
-      return;
-    }
-
-    if (modifiedSteps.isEmpty) {
-      _showError('Please have at least one step');
+    if (modifiedIngredients.isEmpty || modifiedSteps.isEmpty) {
+      _showError('Twists must have at least one ingredient and step');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
+      final user = FirebaseAuth.instance.currentUser;
+
       await _recipeService.addTwist(
         parentRecipeId: widget.originalRecipe.id,
         twistName: _nameController.text.trim(),
         modifiedIngredients: modifiedIngredients,
         modifiedSteps: modifiedSteps,
-        author: FirebaseAuth.instance.currentUser?.email?.split('@').first ?? 'user',
-        userId: FirebaseAuth.instance.currentUser?.uid,
+        // Carry over these from the original so the card displays correctly
+        category: widget.originalRecipe.category,
+        imageUrl: widget.originalRecipe.imageUrl,
+        cookTimeMinutes: widget.originalRecipe.cookTimeMinutes,
+        author: user?.displayName ?? user?.email?.split('@').first ?? 'User',
+        userId: user?.uid,
       );
 
       if (mounted) {
@@ -617,8 +652,11 @@ class _AddTwistPageState extends State<AddTwistPage> {
                     children: [
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 20, color: Color(0xFF4A4A4A)),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: Color(0xFF4A4A4A),
+                        ),
                       ),
                       const Expanded(
                         child: Text(
@@ -640,18 +678,24 @@ class _AddTwistPageState extends State<AddTwistPage> {
                 // Original recipe banner
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFC8956C).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: const Color(0xFFC8956C).withOpacity(0.4)),
+                      color: const Color(0xFFC8956C).withOpacity(0.4),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.subdirectory_arrow_right_rounded,
-                          size: 16, color: Color(0xFFC8956C)),
+                      const Icon(
+                        Icons.subdirectory_arrow_right_rounded,
+                        size: 16,
+                        color: Color(0xFFC8956C),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -767,8 +811,7 @@ class _AddTwistPageState extends State<AddTwistPage> {
                               ),
                             ),
                           )
-                        : _SubmitButton(
-                            label: 'Submit Twist', onTap: _submit),
+                        : _SubmitButton(label: 'Submit Twist', onTap: _submit),
                   ],
                 ),
               ),
@@ -830,13 +873,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF8FA67A),
-        ),
-      );
+    label,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: Color(0xFF8FA67A),
+    ),
+  );
 }
 
 class _AddMoreButton extends StatelessWidget {
@@ -845,15 +888,17 @@ class _AddMoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 26,
-          height: 26,
-          decoration: const BoxDecoration(
-              color: Color(0xFF8FA67A), shape: BoxShape.circle),
-          child: const Icon(Icons.add, color: Colors.white, size: 16),
-        ),
-      );
+    onTap: onTap,
+    child: Container(
+      width: 26,
+      height: 26,
+      decoration: const BoxDecoration(
+        color: Color(0xFF8FA67A),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.add, color: Colors.white, size: 16),
+    ),
+  );
 }
 
 class _SubmitButton extends StatelessWidget {
@@ -863,22 +908,22 @@ class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          onPressed: onTap,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFC8956C),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30)),
-          ),
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600)),
-        ),
-      );
+    width: double.infinity,
+    height: 52,
+    child: ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFC8956C),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    ),
+  );
 }
 
 class _OutlinedField extends StatelessWidget {
@@ -896,32 +941,29 @@ class _OutlinedField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        style: const TextStyle(fontSize: 14, color: Color(0xFF2E2E2E)),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          labelStyle: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF8FA67A),
-              fontWeight: FontWeight.w500),
-          hintStyle:
-              const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFF8FA67A), width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFF8FA67A), width: 1.5),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-      );
+    controller: controller,
+    keyboardType: keyboardType,
+    style: const TextStyle(fontSize: 14, color: Color(0xFF2E2E2E)),
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: const TextStyle(
+        fontSize: 13,
+        color: Color(0xFF8FA67A),
+        fontWeight: FontWeight.w500,
+      ),
+      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF8FA67A), width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF8FA67A), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    ),
+  );
 }
 
 class _CategoryDropdown extends StatelessWidget {
@@ -937,40 +979,45 @@ class _CategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
-        initialValue: selected,
-        hint: const Text('Select category',
-            style: TextStyle(fontSize: 13, color: Color(0xFFBBBBBB))),
-        icon: const Icon(Icons.keyboard_arrow_down_rounded,
-            color: Color(0xFF8FA67A)),
-        decoration: InputDecoration(
-          labelText: 'Recipe Category',
-          labelStyle: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF8FA67A),
-              fontWeight: FontWeight.w500),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFF8FA67A), width: 1),
+    initialValue: selected,
+    hint: const Text(
+      'Select category',
+      style: TextStyle(fontSize: 13, color: Color(0xFFBBBBBB)),
+    ),
+    icon: const Icon(
+      Icons.keyboard_arrow_down_rounded,
+      color: Color(0xFF8FA67A),
+    ),
+    decoration: InputDecoration(
+      labelText: 'Recipe Category',
+      labelStyle: const TextStyle(
+        fontSize: 13,
+        color: Color(0xFF8FA67A),
+        fontWeight: FontWeight.w500,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF8FA67A), width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF8FA67A), width: 1.5),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    ),
+    items: categories
+        .map(
+          (c) => DropdownMenuItem(
+            value: c,
+            child: Text(
+              c,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF2E2E2E)),
+            ),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: Color(0xFF8FA67A), width: 1.5),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
-        items: categories
-            .map((c) => DropdownMenuItem(
-                  value: c,
-                  child: Text(c,
-                      style: const TextStyle(
-                          fontSize: 14, color: Color(0xFF2E2E2E))),
-                ))
-            .toList(),
-        onChanged: onChanged,
-      );
+        )
+        .toList(),
+    onChanged: onChanged,
+  );
 }
 
 class _IngredientRow extends StatelessWidget {
@@ -981,47 +1028,49 @@ class _IngredientRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-              flex: 3,
-              child: _miniField(
-                  controller: entry.nameController,
-                  hint: 'Enter ingredient here')),
-          const SizedBox(width: 8),
-          Expanded(
-              flex: 2,
-              child: _miniField(
-                  controller: entry.quantityController, hint: 'Quantity')),
-          if (onAdd != null) ...[
-            const SizedBox(width: 8),
-            _AddMoreButton(onTap: onAdd!),
-          ],
-        ],
-      );
-
-  Widget _miniField(
-          {required TextEditingController controller,
-          required String hint}) =>
-      TextField(
-        controller: controller,
-        style: const TextStyle(fontSize: 13, color: Color(0xFF2E2E2E)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle:
-              const TextStyle(fontSize: 12, color: Color(0xFFBBBBBB)),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFFDDD8D0)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide:
-                const BorderSide(color: Color(0xFF8FA67A), width: 1.2),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    children: [
+      Expanded(
+        flex: 3,
+        child: _miniField(
+          controller: entry.nameController,
+          hint: 'Enter ingredient here',
         ),
-      );
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        flex: 2,
+        child: _miniField(
+          controller: entry.quantityController,
+          hint: 'Quantity',
+        ),
+      ),
+      if (onAdd != null) ...[
+        const SizedBox(width: 8),
+        _AddMoreButton(onTap: onAdd!),
+      ],
+    ],
+  );
+
+  Widget _miniField({
+    required TextEditingController controller,
+    required String hint,
+  }) => TextField(
+    controller: controller,
+    style: const TextStyle(fontSize: 13, color: Color(0xFF2E2E2E)),
+    decoration: InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(fontSize: 12, color: Color(0xFFBBBBBB)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFDDD8D0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF8FA67A), width: 1.2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    ),
+  );
 }
 
 class _StepRow extends StatelessWidget {
@@ -1029,53 +1078,60 @@ class _StepRow extends StatelessWidget {
   final int stepNumber;
   final VoidCallback? onAdd;
 
-  const _StepRow(
-      {required this.entry, required this.stepNumber, this.onAdd});
+  const _StepRow({required this.entry, required this.stepNumber, this.onAdd});
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: const BoxDecoration(
-                color: Color(0xFF8FA67A), shape: BoxShape.circle),
-            alignment: Alignment.center,
-            child: Text('$stepNumber',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700)),
+    children: [
+      Container(
+        width: 24,
+        height: 24,
+        decoration: const BoxDecoration(
+          color: Color(0xFF8FA67A),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$stepNumber',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: entry.controller,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF2E2E2E)),
-              decoration: InputDecoration(
-                hintText: 'Enter step here',
-                hintStyle:
-                    const TextStyle(fontSize: 12, color: Color(0xFFBBBBBB)),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Color(0xFFDDD8D0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                      color: Color(0xFF8FA67A), width: 1.2),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: TextField(
+          controller: entry.controller,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF2E2E2E)),
+          decoration: InputDecoration(
+            hintText: 'Enter step here',
+            hintStyle: const TextStyle(fontSize: 12, color: Color(0xFFBBBBBB)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFDDD8D0)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Color(0xFF8FA67A),
+                width: 1.2,
               ),
             ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
           ),
-          if (onAdd != null) ...[
-            const SizedBox(width: 8),
-            _AddMoreButton(onTap: onAdd!),
-          ],
-        ],
-      );
+        ),
+      ),
+      if (onAdd != null) ...[
+        const SizedBox(width: 8),
+        _AddMoreButton(onTap: onAdd!),
+      ],
+    ],
+  );
 }
 
 // ── Twist-specific diff rows ───────────────────────────────────────────────
@@ -1102,18 +1158,18 @@ class _TwistIngredientRow extends StatelessWidget {
     final borderColor = isRemoved
         ? const Color(0xFFE57373)
         : isAdded
-            ? const Color(0xFF8FA67A)
-            : isModified
-                ? const Color(0xFFFFB74D)
-                : const Color(0xFFDDD8D0);
+        ? const Color(0xFF8FA67A)
+        : isModified
+        ? const Color(0xFFFFB74D)
+        : const Color(0xFFDDD8D0);
 
     final bgColor = isRemoved
         ? const Color(0xFFFFEBEE)
         : isAdded
-            ? const Color(0xFFE8F5E9)
-            : isModified
-                ? const Color(0xFFFFF8E1)
-                : Colors.white;
+        ? const Color(0xFFE8F5E9)
+        : isModified
+        ? const Color(0xFFFFF8E1)
+        : Colors.white;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1123,14 +1179,18 @@ class _TwistIngredientRow extends StatelessWidget {
             child: TextField(
               controller: entry.controller,
               enabled: !isRemoved,
-              onChanged: (_) => onChanged(),
+              onChanged: (value) {
+                // Only mark as modified if it was originally unchanged
+                if (entry.status == IngredientStatus.unchanged) {
+                  onChanged();
+                }
+              },
               style: TextStyle(
                 fontSize: 13,
                 color: isRemoved
                     ? const Color(0xFFE57373)
                     : const Color(0xFF2E2E2E),
-                decoration:
-                    isRemoved ? TextDecoration.lineThrough : null,
+                decoration: isRemoved ? TextDecoration.lineThrough : null,
               ),
               decoration: InputDecoration(
                 filled: true,
@@ -1148,7 +1208,9 @@ class _TwistIngredientRow extends StatelessWidget {
                   borderSide: BorderSide(color: borderColor, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 12),
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -1187,18 +1249,18 @@ class _TwistStepRow extends StatelessWidget {
     final borderColor = isRemoved
         ? const Color(0xFFE57373)
         : isAdded
-            ? const Color(0xFF8FA67A)
-            : isModified
-                ? const Color(0xFFFFB74D)
-                : const Color(0xFFDDD8D0);
+        ? const Color(0xFF8FA67A)
+        : isModified
+        ? const Color(0xFFFFB74D)
+        : const Color(0xFFDDD8D0);
 
     final bgColor = isRemoved
         ? const Color(0xFFFFEBEE)
         : isAdded
-            ? const Color(0xFFE8F5E9)
-            : isModified
-                ? const Color(0xFFFFF8E1)
-                : Colors.white;
+        ? const Color(0xFFE8F5E9)
+        : isModified
+        ? const Color(0xFFFFF8E1)
+        : Colors.white;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1213,18 +1275,21 @@ class _TwistStepRow extends StatelessWidget {
               color: isRemoved
                   ? const Color(0xFFE57373)
                   : isAdded
-                      ? const Color(0xFF8FA67A)
-                      : isModified
-                          ? const Color(0xFFFFB74D)
-                          : const Color(0xFF8FA67A),
+                  ? const Color(0xFF8FA67A)
+                  : isModified
+                  ? const Color(0xFFFFB74D)
+                  : const Color(0xFF8FA67A),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: Text('$stepNumber',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700)),
+            child: Text(
+              '$stepNumber',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1232,14 +1297,18 @@ class _TwistStepRow extends StatelessWidget {
               controller: entry.controller,
               enabled: !isRemoved,
               maxLines: null,
-              onChanged: (_) => onChanged(),
+              onChanged: (value) {
+                // Only mark as modified if it was originally unchanged
+                if (entry.status == IngredientStatus.unchanged) {
+                  onChanged();
+                }
+              },
               style: TextStyle(
                 fontSize: 13,
                 color: isRemoved
                     ? const Color(0xFFE57373)
                     : const Color(0xFF2E2E2E),
-                decoration:
-                    isRemoved ? TextDecoration.lineThrough : null,
+                decoration: isRemoved ? TextDecoration.lineThrough : null,
               ),
               decoration: InputDecoration(
                 filled: true,
@@ -1257,7 +1326,9 @@ class _TwistStepRow extends StatelessWidget {
                   borderSide: BorderSide(color: borderColor, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 12),
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -1267,8 +1338,8 @@ class _TwistStepRow extends StatelessWidget {
             child: onRestore != null
                 ? _RestoreButton(onTap: onRestore!)
                 : onRemove != null
-                    ? _RemoveButton(onTap: onRemove!)
-                    : const SizedBox(width: 28),
+                ? _RemoveButton(onTap: onRemove!)
+                : const SizedBox(width: 28),
           ),
         ],
       ),
@@ -1282,18 +1353,18 @@ class _RemoveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE57373).withOpacity(0.1),
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFE57373)),
-          ),
-          child: const Icon(Icons.remove, size: 14, color: Color(0xFFE57373)),
-        ),
-      );
+    onTap: onTap,
+    child: Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE57373).withOpacity(0.1),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFE57373)),
+      ),
+      child: const Icon(Icons.remove, size: 14, color: Color(0xFFE57373)),
+    ),
+  );
 }
 
 class _RestoreButton extends StatelessWidget {
@@ -1302,20 +1373,22 @@ class _RestoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFF8FA67A).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF8FA67A)),
-          ),
-          child: const Text('restore',
-              style: TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF8FA67A),
-                  fontWeight: FontWeight.w600)),
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF8FA67A).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF8FA67A)),
+      ),
+      child: const Text(
+        'restore',
+        style: TextStyle(
+          fontSize: 11,
+          color: Color(0xFF8FA67A),
+          fontWeight: FontWeight.w600,
         ),
-      );
+      ),
+    ),
+  );
 }
