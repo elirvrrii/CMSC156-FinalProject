@@ -205,6 +205,21 @@ class RecipeService {
           .collection(_recipesCollection)
           .add(twistData);
 
+      // Notify the author of the original (parent) recipe
+      if (parentRecipe.userId != null && parentRecipe.userId != uid) {
+        await _firestore
+            .collection('users')
+            .doc(parentRecipe.userId) // The ID of the original recipe creator
+            .collection('notifications')
+            .add({
+              'title':
+                  '$authorName added a twist to your "${parentRecipe.name}" recipe!',
+              'timestamp': FieldValue.serverTimestamp(),
+              'type': 'twist',
+              'recipeId': docRef.id, // Optional: Add link to the new twist here
+            });
+      }
+
       if (uid != null) {
         await _firestore.collection('users').doc(uid).set({
           'twist_count': FieldValue.increment(1),
