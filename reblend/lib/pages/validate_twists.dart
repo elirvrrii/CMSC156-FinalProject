@@ -51,7 +51,7 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
   @override
   void initState() {
     super.initState();
-    _twists = sampleRecipes.where((r) => r.parentRecipeId != null).toList();
+    // _twists = sampleRecipes.where((r) => r.parentRecipeId != null).toList();
     _swipeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 350),

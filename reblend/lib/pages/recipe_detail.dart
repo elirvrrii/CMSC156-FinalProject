@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' as io;
 import '../models/recipe.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/recipe_service.dart';
+import 'add_recipe_page.dart';
 
 // ── Colour palette for diff states ────────────────────────────────────────
 
@@ -34,9 +37,59 @@ class RecipeDetailPage extends StatefulWidget {
 }
 
 class _RecipeDetailPageState extends State<RecipeDetailPage>
-    with SingleTickerProviderStateMixin {
+  with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTab = 0;
+
+  void _showDeleteConfirmation(BuildContext context, Recipe recipe) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Recipe', style: TextStyle(color: Color(0xFF2E2E2E))),
+        content: const Text('Are you sure you want to delete this recipe? This action cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE57373),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx); // Close dialog
+              try {
+                // Call your delete service
+                await RecipeService().deleteRecipe(recipe.id); 
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Recipe deleted successfully'),
+                      backgroundColor: Color(0xFF8FA67A),
+                    ),
+                  );
+                  Navigator.pop(context); // Exit the detail page
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete: $e'),
+                      backgroundColor: const Color(0xFFE57373),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -59,8 +112,11 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
   Widget build(BuildContext context) {
     final recipe = widget.recipe;
     final isTwist = recipe.parentRecipeId != null;
-    
-
+    // Check if current user is the owner
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    // Assuming your Recipe model has a 'userId' property. 
+    // If it uses 'authorId' or similar, change this accordingly.
+    final isOwner = currentUserUid != null && recipe.userId == currentUserUid;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1EC),
@@ -100,19 +156,56 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
                         ),
 
                         if (recipe.parentRecipeName != null && recipe.parentRecipeAuthor != null)
-      Text(
-        'orig. recipe by @${recipe.parentRecipeAuthor}',
-        style: const TextStyle(
-          fontSize: 11,
-          color: Color(0xFFC8956C),
-          fontWeight: FontWeight.w400,
-          fontStyle: FontStyle.italic,
-        ),
-      ),
+                        Text(
+                          'orig. recipe by @${recipe.parentRecipeAuthor}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFC8956C),
+                            fontWeight: FontWeight.w400,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                       ],
                     ),
-                    const Icon(Icons.more_horiz,
-                        size: 22, color: Color(0xFF4A4A4A)),
+
+                  // Replace the existing more_horiz icon with this logic:
+                  if (isOwner)
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_horiz, size: 22, color: Color(0xFF4A4A4A)),
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          AddRecipePage.showEdit(context, recipe);
+                        } else if (value == 'delete') {
+                          _showDeleteConfirmation(context, recipe);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 20, color: Color(0xFF8FA67A)),
+                              SizedBox(width: 8),
+                              Text('Edit Recipe'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, size: 20, color: Color(0xFFE57373)),
+                              SizedBox(width: 8),
+                              Text('Delete Recipe', style: TextStyle(color: Color(0xFFE57373))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    const Icon(Icons.more_horiz, size: 22, color: Color(0xFF4A4A4A)),
                   ],
                 ),
               ),

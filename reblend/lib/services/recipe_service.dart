@@ -220,6 +220,7 @@ class RecipeService {
       userId: data['userId'],
       date: data['date'] ?? '',
       rating: (data['rating'] ?? 0).toDouble(),
+      cookTimeMinutes: data['cookTimeMinutes'] ?? '',
       reviewCount: data['reviewCount'] ?? 0,
       imageUrl: data['imageUrl'] ?? '',
       hasTwist: data['hasTwist'] ?? false,
@@ -230,5 +231,60 @@ class RecipeService {
       steps: steps,
       reviews: reviews,
     );
+  }
+
+  /// Update an existing recipe or twist in Firestore
+  Future<void> updateRecipe({
+    required String recipeId,
+    required String name,
+    required String category,
+    required int cookTimeMinutes,
+    required List<RecipeIngredient> ingredients,
+    required List<RecipeStep> steps,
+    required String imagePath,
+  }) async {
+    try {
+      await _firestore.collection(_recipesCollection).doc(recipeId).update({
+        'name': name,
+        'category': category,
+        'cookTimeMinutes': cookTimeMinutes,
+        'imageUrl': imagePath,
+        // Maps the models down to clean String lists matching your schema
+        'ingredients': ingredients.map((ing) => ing.label).toList(),
+        'steps': steps.map((step) => step.text).toList(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update recipe: $e');
+    }
+  }
+
+  /// Delete a recipe or twist from Firestore and decrement user statistics
+  Future<void> deleteRecipe(String recipeId) async {
+    try {
+      // 1. Fetch the recipe first to see who owns it and check if it's a twist
+      final recipeDoc = await _firestore.collection(_recipesCollection).doc(recipeId).get();
+      
+      if (!recipeDoc.exists) {
+        throw Exception('Recipe not found');
+      }
+
+      final data = recipeDoc.data() as Map<String, dynamic>;
+      final uid = data['userId'];
+      final bool isTwist = data['hasTwist'] ?? false;
+
+      // 2. Delete the recipe document
+      await _firestore.collection(_recipesCollection).doc(recipeId).delete();
+
+      // 3. Decrement the user's statistics safely if the user ID exists
+      if (uid != null) {
+        final counterField = isTwist ? 'twist_count' : 'recipe_count';
+        await _firestore.collection('users').doc(uid).set({
+          counterField: FieldValue.increment(-1),
+        }, SetOptions(merge: true));
+      }
+    } catch (e) {
+      throw Exception('Failed to delete recipe: $e');
+    }
   }
 }

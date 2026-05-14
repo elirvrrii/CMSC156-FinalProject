@@ -11,12 +11,28 @@ import '../services/recipe_service.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 class AddRecipePage extends StatefulWidget {
-  const AddRecipePage({super.key});
+  final Recipe? recipeToEdit;
+  const AddRecipePage({super.key, this.recipeToEdit});
 
   static void show(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (_, animation, _) => const AddRecipePage(),
+        transitionsBuilder: (_, animation, _, child) => SlideTransition(
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+          child: child,
+        ),
+        transitionDuration: const Duration(milliseconds: 320),
+      ),
+    );
+  }
+
+  // New method specifically for launching edit mode
+  static void showEdit(BuildContext context, Recipe recipe) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, animation, _) => AddRecipePage(recipeToEdit: recipe),
         transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
               .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
@@ -42,6 +58,41 @@ class _AddRecipePageState extends State<AddRecipePage> {
 
   final List<_IngredientEntry> _ingredients = [_IngredientEntry()];
   final List<_StepEntry> _steps = [_StepEntry()];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Pre-fill data if we are editing an existing recipe
+    if (widget.recipeToEdit != null) {
+      final r = widget.recipeToEdit!;
+      _nameController.text = r.name;
+      _cookTimeController.text = r.cookTimeMinutes.toString();
+      _selectedCategory = r.category;
+      _selectedImagePath = r.imageUrl; // This will bypass the File check gracefully
+
+      _ingredients.clear();
+      for (var ing in r.ingredients) {
+        final entry = _IngredientEntry();
+        // Reverse your standard formatting of "Name (Quantity)"
+        final match = RegExp(r'^(.*?) \((.*?)\)$').firstMatch(ing.label);
+        if (match != null) {
+          entry.nameController.text = match.group(1) ?? '';
+          entry.quantityController.text = match.group(2) ?? '';
+        } else {
+          entry.nameController.text = ing.label;
+        }
+        _ingredients.add(entry);
+      }
+
+      _steps.clear();
+      for (var step in r.steps) {
+        final entry = _StepEntry();
+        entry.controller.text = step.text;
+        _steps.add(entry);
+      }
+    }
+  }
 
   static const List<String> _categories = [
     'main dish',
@@ -141,17 +192,29 @@ class _AddRecipePageState extends State<AddRecipePage> {
     try {
       final cookTimeMinutes = int.tryParse(_cookTimeController.text) ?? 0;
       final currentUser = FirebaseAuth.instance.currentUser;
-
-      await _recipeService.addRecipe(
-        name: _nameController.text.trim(),
-        category: _selectedCategory!,
-        cookTimeMinutes: cookTimeMinutes,
-        ingredients: validIngredients,
-        steps: validSteps,
-        imagePath: _selectedImagePath!,
-        author: currentUser?.email?.split('@').first ?? 'user',
-        userId: currentUser?.uid,
-      );
+      
+      if (widget.recipeToEdit != null) {
+        await _recipeService.updateRecipe(
+          recipeId: widget.recipeToEdit!.id,
+          name: _nameController.text.trim(),
+          category: _selectedCategory!,
+          cookTimeMinutes: cookTimeMinutes,
+          ingredients: validIngredients,
+          steps: validSteps,
+          imagePath: _selectedImagePath!,
+        );
+      } else {
+        await _recipeService.addRecipe(
+          name: _nameController.text.trim(),
+          category: _selectedCategory!,
+          cookTimeMinutes: cookTimeMinutes,
+          ingredients: validIngredients,
+          steps: validSteps,
+          imagePath: _selectedImagePath!,
+          author: currentUser?.email?.split('@').first ?? 'user',
+          userId: currentUser?.uid,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
