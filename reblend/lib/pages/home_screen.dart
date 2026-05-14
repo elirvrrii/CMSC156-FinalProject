@@ -7,6 +7,7 @@ import 'notifications_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main_screen.dart';
 import '../widgets/rate_recipe_sheet.dart'; 
+import 'add_recipe_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -297,6 +298,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             // If logged in, show the sheet like normal
                                             RateRecipeSheet.show(context, targetRecipe);
                                           }
+                                  },
+                                  onTwistTap: () {
+                                    AddTwistPage.show(context, targetRecipe);
                                   },
                                 );
                               },

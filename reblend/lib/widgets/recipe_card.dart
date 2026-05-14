@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' as io;
 import '../models/recipe.dart';
+import '../pages/add_recipe_page.dart';
 
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final VoidCallback onTap;
   final VoidCallback? onRatingTap;
+  final VoidCallback? onTwistTap;
 
   const RecipeCard({
     super.key,
     required this.recipe,
     required this.onTap,
     this.onRatingTap,
+    this.onTwistTap,
   });
 
   @override
@@ -53,7 +56,10 @@ class RecipeCard extends StatelessWidget {
                         child: _IconButton(icon: Icons.star_border_rounded),
                       ),
                       const SizedBox(width: 6),
-                      _IconButton(icon: Icons.blender_outlined),
+                      GestureDetector(
+                        onTap: onTwistTap,
+                        child: _IconButton(icon: Icons.blender_outlined),
+                      ),
                     ],
                   ),
                 ),

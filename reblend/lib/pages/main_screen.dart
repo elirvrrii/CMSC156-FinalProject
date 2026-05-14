@@ -21,7 +21,7 @@ class MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = const [
     HomeScreen(),
     MyRecipesScreen(),
-    Center(child: Text("Add Recipe")),
+    AddRecipePage(),
     ValidateTwistsPage(),
     ProfilePage(),
   ];
