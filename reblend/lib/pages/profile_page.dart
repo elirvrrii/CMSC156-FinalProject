@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/recipe_service.dart';
+import '../models/recipe.dart';
+import '../widgets/recipe_card.dart';
+import 'recipe_detail.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -9,12 +13,12 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage>
-    with SingleTickerProviderStateMixin {
+class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   // Get the current user's ID
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
+  final RecipeService _recipeService = RecipeService();
 
   @override
   void initState() {
@@ -127,7 +131,7 @@ class _ProfilePageState extends State<ProfilePage>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildPlaceholder("Your Recipes List"),
+                      _buildMyRecipes(),
                       _buildPlaceholder("Your Twists List"),
                       _buildSettings(),
                       _buildLogout(context),
@@ -141,6 +145,55 @@ class _ProfilePageState extends State<ProfilePage>
       ),
     );
   }
+
+  Widget _buildMyRecipes() {
+    return FutureBuilder<List<Recipe>>(
+      // Fetch all recipes from your service
+      future: _recipeService.getAllRecipes(), 
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Color(0xFF8FA67A)));
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text("Error loading recipes: ${snapshot.error}"));
+        }
+
+        // Filter recipes to only show those belonging to the current user
+        // and ensuring they aren't "twists" (if you want only original recipes here)
+        final myRecipes = snapshot.data?.where((r) => r.userId == userId && !r.hasTwist).toList() ?? [];
+
+        if (myRecipes.isEmpty) {
+          return const Center(
+            child: Text("You haven't posted any recipes yet.", 
+            style: TextStyle(color: Colors.grey))
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: myRecipes.length,
+          itemBuilder: (context, index) {
+            final recipe = myRecipes[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: RecipeCard(
+                recipe: recipe,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecipeDetailPage(recipe: recipe),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+}
 
   // ─── Stats Widget ─────────────────────────────
   Widget _statBox(String label, String value) {
