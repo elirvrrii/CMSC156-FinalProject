@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'dart:io' as io;
 import '../models/recipe.dart';
 
 // ── Colour palette for diff states ────────────────────────────────────────
@@ -199,9 +200,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
   }
 
   Widget _buildRecipeImage(String imagePath) {
-    // Check if it's a local file or URL
+    // Check if it's a network URL
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      // Network image
       return Image.network(
         imagePath,
         height: 220,
@@ -209,10 +209,12 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
       );
-    } else {
-      // Local file
+    }
+    
+    // Try to load as local file (native platforms only)
+    if (!kIsWeb) {
       try {
-        final file = File(imagePath);
+        final file = io.File(imagePath);
         if (file.existsSync()) {
           return Image.file(
             file,
@@ -221,13 +223,13 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
           );
-        } else {
-          return _imageErrorPlaceholder();
         }
       } catch (e) {
-        return _imageErrorPlaceholder();
+        // Fallback if File operations fail
       }
     }
+    
+    return _imageErrorPlaceholder();
   }
 
   Widget _imageErrorPlaceholder() {

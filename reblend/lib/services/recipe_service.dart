@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/recipe.dart';
 
 class RecipeService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   static const String _recipesCollection = 'recipes';
 
   /// Add a new recipe to Firestore
@@ -13,18 +15,24 @@ class RecipeService {
     required List<RecipeIngredient> ingredients,
     required List<RecipeStep> steps,
     required String imagePath,
-    String author = 'user',
+    String? author,
+    String? userId,
   }) async {
     try {
       final now = DateTime.now();
       final dateStr =
           '${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}/${now.year}';
 
+      // Get current user if userId not provided
+      final uid = userId ?? _auth.currentUser?.uid;
+      final authorName = author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
+
       final recipeData = {
         'name': name,
         'category': category,
         'cookTimeMinutes': cookTimeMinutes,
-        'author': author,
+        'author': authorName,
+        'userId': uid, // Attach recipe to user
         'date': dateStr,
         'imageUrl': imagePath,
         'ingredients': ingredients.map((ing) => ing.label).toList(),
@@ -40,6 +48,13 @@ class RecipeService {
       };
 
       final docRef = await _firestore.collection(_recipesCollection).add(recipeData);
+
+      if (uid != null) {
+        await _firestore.collection('users').doc(uid).set({
+          'recipe_count': FieldValue.increment(1),
+        }, SetOptions(merge: true));
+      }
+
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to add recipe: $e');
@@ -70,6 +85,41 @@ class RecipeService {
     }
   }
 
+  /// Get recipes by user ID
+  Future<List<Recipe>> getRecipesByUserId(String userId) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_recipesCollection)
+          .where('userId', isEqualTo: userId)
+          .get();
+      final docs = querySnapshot.docs.toList();
+      docs.sort((a, b) {
+        final aCreated = a.data()['createdAt'];
+        final bCreated = b.data()['createdAt'];
+        if (aCreated is Timestamp && bCreated is Timestamp) {
+          return bCreated.compareTo(aCreated);
+        }
+        return 0;
+      });
+      return docs.map((doc) => _documentToRecipe(doc)).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch user recipes: $e');
+    }
+  }
+
+  /// Get current user's recipes
+  Future<List<Recipe>> getCurrentUserRecipes() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
+      return getRecipesByUserId(userId);
+    } catch (e) {
+      throw Exception('Failed to fetch current user recipes: $e');
+    }
+  }
+
   /// Get a single recipe by ID
   Future<Recipe?> getRecipeById(String recipeId) async {
     try {
@@ -90,7 +140,8 @@ class RecipeService {
     required String twistName,
     required List<RecipeIngredient> modifiedIngredients,
     required List<RecipeStep> modifiedSteps,
-    String author = 'user',
+    String? author,
+    String? userId,
   }) async {
     try {
       final parentRecipe = await getRecipeById(parentRecipeId);
@@ -101,12 +152,15 @@ class RecipeService {
       final now = DateTime.now();
       final dateStr =
           '${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}/${now.year}';
+      final uid = userId ?? _auth.currentUser?.uid;
+      final authorName = author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
 
       final twistData = {
         'name': twistName,
-        'category': parentRecipe.imageUrl, // Keep category from parent
+        'category': parentRecipe.category,
         'cookTimeMinutes': 0, // Could be updated by user
-        'author': author,
+        'author': authorName,
+        'userId': uid,
         'date': dateStr,
         'imageUrl': '',
         'ingredients': modifiedIngredients.map((ing) => ing.label).toList(),
@@ -122,6 +176,13 @@ class RecipeService {
       };
 
       final docRef = await _firestore.collection(_recipesCollection).add(twistData);
+
+      if (uid != null) {
+        await _firestore.collection('users').doc(uid).set({
+          'twist_count': FieldValue.increment(1),
+        }, SetOptions(merge: true));
+      }
+
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to add twist: $e');
@@ -156,6 +217,7 @@ class RecipeService {
       name: data['name'] ?? '',
       category: data['category'] ?? '',
       author: data['author'] ?? 'Unknown',
+      userId: data['userId'],
       date: data['date'] ?? '',
       rating: (data['rating'] ?? 0).toDouble(),
       reviewCount: data['reviewCount'] ?? 0,

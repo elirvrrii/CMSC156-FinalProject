@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'dart:io' as io;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/recipe.dart';
 import '../services/recipe_service.dart';
 
@@ -138,6 +140,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
 
     try {
       final cookTimeMinutes = int.tryParse(_cookTimeController.text) ?? 0;
+      final currentUser = FirebaseAuth.instance.currentUser;
 
       await _recipeService.addRecipe(
         name: _nameController.text.trim(),
@@ -146,6 +149,8 @@ class _AddRecipePageState extends State<AddRecipePage> {
         ingredients: validIngredients,
         steps: validSteps,
         imagePath: _selectedImagePath!,
+        author: currentUser?.email?.split('@').first ?? 'user',
+        userId: currentUser?.uid,
       );
 
       if (mounted) {
@@ -234,9 +239,9 @@ class _AddRecipePageState extends State<AddRecipePage> {
                                   : Colors.transparent,
                               width: 2,
                             ),
-                            image: _selectedImagePath != null
+                            image: _selectedImagePath != null && !kIsWeb
                                 ? DecorationImage(
-                                    image: FileImage(File(_selectedImagePath!)),
+                                    image: FileImage(io.File(_selectedImagePath!)),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
@@ -497,6 +502,8 @@ class _AddTwistPageState extends State<AddTwistPage> {
         twistName: _nameController.text.trim(),
         modifiedIngredients: modifiedIngredients,
         modifiedSteps: modifiedSteps,
+        author: FirebaseAuth.instance.currentUser?.email?.split('@').first ?? 'user',
+        userId: FirebaseAuth.instance.currentUser?.uid,
       );
 
       if (mounted) {

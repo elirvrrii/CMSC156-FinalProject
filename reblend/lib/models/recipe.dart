@@ -53,6 +53,7 @@ class Recipe {
   final String name;
   final String category;
   final String author;
+  final String? userId;
   final String date;
   final double rating;
   final int reviewCount;
@@ -70,6 +71,7 @@ class Recipe {
     required this.name,
     required this.category,
     required this.author,
+    this.userId,
     required this.date,
     required this.rating,
     required this.reviewCount,
