@@ -22,7 +22,7 @@ class RateRecipeSheet extends StatefulWidget {
 
 class _RateRecipeSheetState extends State<RateRecipeSheet> {
   int _selectedStars = 0;
-  int _hoveredStars = 0;
+  final int _hoveredStars = 0;
   final TextEditingController _commentController = TextEditingController();
 
   @override

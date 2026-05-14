@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../models/recipe.dart';
+import '../services/recipe_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ADD RECIPE PAGE
@@ -11,8 +14,8 @@ class AddRecipePage extends StatefulWidget {
   static void show(BuildContext context) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (_, animation, __) => const AddRecipePage(),
-        transitionsBuilder: (_, animation, __, child) => SlideTransition(
+        pageBuilder: (_, animation, _) => const AddRecipePage(),
+        transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
               .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
           child: child,
@@ -29,7 +32,11 @@ class AddRecipePage extends StatefulWidget {
 class _AddRecipePageState extends State<AddRecipePage> {
   final _nameController = TextEditingController();
   final _cookTimeController = TextEditingController();
+  final _recipeService = RecipeService();
+  final _imagePicker = ImagePicker();
   String? _selectedCategory;
+  String? _selectedImagePath;
+  bool _isLoading = false;
 
   final List<_IngredientEntry> _ingredients = [_IngredientEntry()];
   final List<_StepEntry> _steps = [_StepEntry()];
@@ -45,17 +52,129 @@ class _AddRecipePageState extends State<AddRecipePage> {
   void dispose() {
     _nameController.dispose();
     _cookTimeController.dispose();
-    for (final e in _ingredients) e.dispose();
-    for (final e in _steps) e.dispose();
+    for (final e in _ingredients) {
+      e.dispose();
+    }
+    for (final e in _steps) {
+      e.dispose();
+    }
     super.dispose();
   }
 
   void _addIngredient() => setState(() => _ingredients.add(_IngredientEntry()));
   void _addStep() => setState(() => _steps.add(_StepEntry()));
 
-  void _submit() {
-    // TODO: wire up to data layer
-    Navigator.of(context).pop();
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        setState(() => _selectedImagePath = image.path);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image selected'),
+            duration: Duration(milliseconds: 800),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Image picker error: $e');
+      if (mounted) {
+        _showError('Unable to access image picker. Please check permissions.');
+      }
+    }
+  }
+
+  void _submit() async {
+    // Validate inputs
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Please enter a recipe name');
+      return;
+    }
+
+    if (_selectedCategory == null) {
+      _showError('Please select a category');
+      return;
+    }
+
+    if (_cookTimeController.text.trim().isEmpty) {
+      _showError('Please enter cook time');
+      return;
+    }
+
+    if (_selectedImagePath == null) {
+      _showError('Please select a recipe image');
+      return;
+    }
+
+    // Filter out empty ingredients
+    final validIngredients = _ingredients
+        .where((ing) => ing.nameController.text.trim().isNotEmpty)
+        .map((ing) => RecipeIngredient(
+              label:
+                  '${ing.nameController.text} (${ing.quantityController.text})',
+            ))
+        .toList();
+
+    if (validIngredients.isEmpty) {
+      _showError('Please add at least one ingredient');
+      return;
+    }
+
+    // Filter out empty steps
+    final validSteps = _steps
+        .where((step) => step.controller.text.trim().isNotEmpty)
+        .map((step) => RecipeStep(text: step.controller.text))
+        .toList();
+
+    if (validSteps.isEmpty) {
+      _showError('Please add at least one step');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final cookTimeMinutes = int.tryParse(_cookTimeController.text) ?? 0;
+
+      await _recipeService.addRecipe(
+        name: _nameController.text.trim(),
+        category: _selectedCategory!,
+        cookTimeMinutes: cookTimeMinutes,
+        ingredients: validIngredients,
+        steps: validSteps,
+        imagePath: _selectedImagePath!,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Recipe added successfully!'),
+            backgroundColor: Color(0xFF8FA67A),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      _showError('Failed to add recipe: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFE57373),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -97,7 +216,7 @@ class _AddRecipePageState extends State<AddRecipePage> {
                 const SizedBox(height: 24),
                 // Image upload placeholder
                 GestureDetector(
-                  onTap: () {}, // TODO: image picker
+                  onTap: _pickImage,
                   child: SizedBox(
                     width: 90,
                     height: 90,
@@ -105,13 +224,29 @@ class _AddRecipePageState extends State<AddRecipePage> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFFC8956C).withOpacity(0.15),
+                            color: _selectedImagePath == null
+                                ? const Color(0xFFC8956C).withOpacity(0.15)
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _selectedImagePath == null
+                                  ? const Color(0xFFC8956C)
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                            image: _selectedImagePath != null
+                                ? DecorationImage(
+                                    image: FileImage(File(_selectedImagePath!)),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
-                          child: const Center(
-                            child: Icon(Icons.image_outlined,
-                                size: 48, color: Color(0xFFC8956C)),
-                          ),
+                          child: _selectedImagePath == null
+                              ? const Center(
+                                  child: Icon(Icons.image_outlined,
+                                      size: 48, color: Color(0xFFC8956C)),
+                                )
+                              : null,
                         ),
                         Positioned(
                           right: 0,
@@ -131,7 +266,18 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Text(
+                  _selectedImagePath == null ? 'Recipe image *' : 'Change image',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _selectedImagePath == null
+                        ? const Color(0xFFE57373)
+                        : const Color(0xFF8FA67A),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -194,7 +340,16 @@ class _AddRecipePageState extends State<AddRecipePage> {
                     )),
 
                     const SizedBox(height: 32),
-                    _SubmitButton(label: 'Submit', onTap: _submit),
+                    _isLoading
+                        ? const SizedBox(
+                            height: 52,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF8FA67A),
+                              ),
+                            ),
+                          )
+                        : _SubmitButton(label: 'Submit', onTap: _submit),
                   ],
                 ),
               ),
@@ -218,9 +373,9 @@ class AddTwistPage extends StatefulWidget {
   static void show(BuildContext context, Recipe recipe) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (_, animation, __) =>
+        pageBuilder: (_, animation, _) =>
             AddTwistPage(originalRecipe: recipe),
-        transitionsBuilder: (_, animation, __, child) => SlideTransition(
+        transitionsBuilder: (_, animation, _, child) => SlideTransition(
           position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
               .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
           child: child,
@@ -236,8 +391,10 @@ class AddTwistPage extends StatefulWidget {
 
 class _AddTwistPageState extends State<AddTwistPage> {
   final _nameController = TextEditingController();
+  final _recipeService = RecipeService();
   late List<_TwistIngredientEntry> _ingredients;
   late List<_TwistStepEntry> _steps;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -253,8 +410,12 @@ class _AddTwistPageState extends State<AddTwistPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    for (final e in _ingredients) e.dispose();
-    for (final e in _steps) e.dispose();
+    for (final e in _ingredients) {
+      e.dispose();
+    }
+    for (final e in _steps) {
+      e.dispose();
+    }
     super.dispose();
   }
 
@@ -286,9 +447,85 @@ class _AddTwistPageState extends State<AddTwistPage> {
   void _restoreStep(int i) =>
       setState(() => _steps[i].status = StepStatus.unchanged);
 
-  void _submit() {
-    // TODO: wire up to data layer
-    Navigator.of(context).pop();
+  void _submit() async {
+    // Validate inputs
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Please enter a twist name');
+      return;
+    }
+
+    // Get modified ingredients and steps
+    final modifiedIngredients = _ingredients
+        .where((ing) => ing.status != IngredientStatus.removed)
+        .map((ing) => RecipeIngredient(
+              label: ing.controller.text,
+              status: ing.status == IngredientStatus.added
+                  ? IngredientStatus.added
+                  : ing.status == IngredientStatus.modified
+                      ? IngredientStatus.modified
+                      : IngredientStatus.unchanged,
+            ))
+        .toList();
+
+    final modifiedSteps = _steps
+        .where((step) => step.status != StepStatus.removed)
+        .map((step) => RecipeStep(
+              text: step.controller.text,
+              status: step.status == StepStatus.added
+                  ? StepStatus.added
+                  : step.status == StepStatus.modified
+                      ? StepStatus.modified
+                      : StepStatus.unchanged,
+            ))
+        .toList();
+
+    if (modifiedIngredients.isEmpty) {
+      _showError('Please have at least one ingredient');
+      return;
+    }
+
+    if (modifiedSteps.isEmpty) {
+      _showError('Please have at least one step');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _recipeService.addTwist(
+        parentRecipeId: widget.originalRecipe.id,
+        twistName: _nameController.text.trim(),
+        modifiedIngredients: modifiedIngredients,
+        modifiedSteps: modifiedSteps,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Twist added successfully!'),
+            backgroundColor: Color(0xFF8FA67A),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      _showError('Failed to add twist: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFE57373),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -451,7 +688,17 @@ class _AddTwistPageState extends State<AddTwistPage> {
                     }),
 
                     const SizedBox(height: 32),
-                    _SubmitButton(label: 'Submit Twist', onTap: _submit),
+                    _isLoading
+                        ? const SizedBox(
+                            height: 52,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF8FA67A),
+                              ),
+                            ),
+                          )
+                        : _SubmitButton(
+                            label: 'Submit Twist', onTap: _submit),
                   ],
                 ),
               ),
@@ -620,7 +867,7 @@ class _CategoryDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
-        value: selected,
+        initialValue: selected,
         hint: const Text('Select category',
             style: TextStyle(fontSize: 13, color: Color(0xFFBBBBBB))),
         icon: const Icon(Icons.keyboard_arrow_down_rounded,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../models/recipe.dart';
 
 // ── Colour palette for diff states ────────────────────────────────────────
@@ -57,6 +58,8 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
   Widget build(BuildContext context) {
     final recipe = widget.recipe;
     final isTwist = recipe.parentRecipeId != null;
+    
+
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1EC),
@@ -121,18 +124,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  recipe.imageUrl,
-                  height: 220,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 220,
-                    color: const Color(0xFFE8E0D8),
-                    child: const Icon(Icons.image_outlined,
-                        size: 48, color: Color(0xFFADADAD)),
-                  ),
-                ),
+                child: _buildRecipeImage(recipe.imageUrl),
               ),
             ),
           ),
@@ -202,6 +194,48 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRecipeImage(String imagePath) {
+    // Check if it's a local file or URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      // Network image
+      return Image.network(
+        imagePath,
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
+      );
+    } else {
+      // Local file
+      try {
+        final file = File(imagePath);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            height: 220,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
+          );
+        } else {
+          return _imageErrorPlaceholder();
+        }
+      } catch (e) {
+        return _imageErrorPlaceholder();
+      }
+    }
+  }
+
+  Widget _imageErrorPlaceholder() {
+    return Container(
+      height: 220,
+      color: const Color(0xFFE8E0D8),
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 48, color: Color(0xFFADADAD)),
       ),
     );
   }
@@ -704,70 +738,51 @@ class _ProcedureTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Legend — only for twists
-        if (isTwist)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Wrap(
-              spacing: 14,
-              runSpacing: 4,
-              children: const [
-                _LegendDot(
-                    color: _DiffColors.addedBorder, label: 'New step'),
-                _LegendDot(
-                    color: _DiffColors.modifiedBorder,
-                    label: 'Modified step'),
-              ],
+    
+    final stepWidgets = steps.asMap().entries.map((e) {
+      final step = e.value;
+      final status = step.status;
+
+      final bgColor = switch (status) {
+        StepStatus.added    => _DiffColors.addedBg,
+        StepStatus.removed  => _DiffColors.removedBg,
+        StepStatus.modified => _DiffColors.modifiedBg,
+        StepStatus.unchanged => Colors.white,
+      };
+      final borderColor = switch (status) {
+        StepStatus.added    => _DiffColors.addedBorder,
+        StepStatus.removed  => _DiffColors.removedBorder,
+        StepStatus.modified => _DiffColors.modifiedBorder,
+        StepStatus.unchanged => const Color(0xFFEAE5DE),
+      };
+      final circleColor = switch (status) {
+        StepStatus.added    => _DiffColors.addedBorder,
+        StepStatus.removed  => _DiffColors.removedBorder,
+        StepStatus.modified => _DiffColors.modifiedBorder,
+        StepStatus.unchanged => const Color(0xFF8FA67A),
+      };
+      final textColor = switch (status) {
+        StepStatus.removed  => _DiffColors.removedText,
+        StepStatus.modified => _DiffColors.modifiedText,
+        StepStatus.added    => _DiffColors.addedText,
+        StepStatus.unchanged => const Color(0xFF4A4A4A),
+      };
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border(
+              left: BorderSide(color: borderColor, width: 4),
             ),
           ),
-
-        ...steps.asMap().entries.map((e) {
-          final step = e.value;
-          final status = step.status;
-
-          final bgColor = switch (status) {
-            StepStatus.added    => _DiffColors.addedBg,
-            StepStatus.removed  => _DiffColors.removedBg,
-            StepStatus.modified => _DiffColors.modifiedBg,
-            StepStatus.unchanged => Colors.white,
-          };
-          final borderColor = switch (status) {
-            StepStatus.added    => _DiffColors.addedBorder,
-            StepStatus.removed  => _DiffColors.removedBorder,
-            StepStatus.modified => _DiffColors.modifiedBorder,
-            StepStatus.unchanged => const Color(0xFFEAE5DE),
-          };
-          final circleColor = switch (status) {
-            StepStatus.added    => _DiffColors.addedBorder,
-            StepStatus.removed  => _DiffColors.removedBorder,
-            StepStatus.modified => _DiffColors.modifiedBorder,
-            StepStatus.unchanged => const Color(0xFF8FA67A),
-          };
-          final textColor = switch (status) {
-            StepStatus.removed  => _DiffColors.removedText,
-            StepStatus.modified => _DiffColors.modifiedText,
-            StepStatus.added    => _DiffColors.addedText,
-            StepStatus.unchanged => const Color(0xFF4A4A4A),
-          };
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border(
-                  left: BorderSide(color: borderColor, width: 4),
-                  top: BorderSide(color: borderColor.withOpacity(0.3)),
-                  right: BorderSide(color: borderColor.withOpacity(0.3)),
-                  bottom: BorderSide(color: borderColor.withOpacity(0.3)),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              child: Row(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
@@ -789,70 +804,90 @@ class _ProcedureTab extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // For modified: show original struck through
-                        if (status == StepStatus.modified &&
-                            step.originalText != null) ...[
-                          Text(
-                            step.originalText!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: _DiffColors.modifiedText.withOpacity(0.6),
-                              decoration: TextDecoration.lineThrough,
-                              decorationColor:
-                                  _DiffColors.modifiedText.withOpacity(0.6),
-                              height: 1.4,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        Text(
-                          step.text,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: textColor,
-                            height: 1.5,
-                            decoration: status == StepStatus.removed
-                                ? TextDecoration.lineThrough
-                                : null,
-                            decorationColor: textColor,
-                          ),
-                        ),
-                        // Status pill
-                        if (status != StepStatus.unchanged) ...[
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: borderColor.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              switch (status) {
-                                StepStatus.added    => '+ New step',
-                                StepStatus.removed  => '− Removed',
-                                StepStatus.modified => '~ Modified',
-                                StepStatus.unchanged => '',
-                              },
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: borderColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: Text(
+                      step.text,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: textColor,
+                        height: 1.5,
+
+                        decoration: status == StepStatus.removed
+                            ? TextDecoration.lineThrough
+                            : null,
+                        decorationColor: textColor,
+                      ),
                     ),
                   ),
                 ],
               ),
+              // For modified: show original struck through
+              if (status == StepStatus.modified &&
+                  step.originalText != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  step.originalText!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _DiffColors.modifiedText.withOpacity(0.6),
+                    decoration: TextDecoration.lineThrough,
+                    decorationColor:
+                        _DiffColors.modifiedText.withOpacity(0.6),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              // Status pill
+              if (status != StepStatus.unchanged) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: borderColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    switch (status) {
+                      StepStatus.added    => '+ New step',
+                      StepStatus.removed  => '− Removed',
+                      StepStatus.modified => '~ Modified',
+                      StepStatus.unchanged => '',
+                    },
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: borderColor,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Legend — only for twists
+        if (isTwist)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 14),
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 4,
+              children: const [
+                _LegendDot(
+                    color: _DiffColors.addedBorder, label: 'New step'),
+                _LegendDot(
+                    color: _DiffColors.modifiedBorder,
+                    label: 'Modified step'),
+              ],
             ),
-          );
-        }),
+          ),
+
+        ...stepWidgets,
       ],
     );
   }

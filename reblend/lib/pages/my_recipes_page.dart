@@ -360,7 +360,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                 Image.network(
                   recipe.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     color: const Color(0xFFE8E0D0),
                     child: const Icon(Icons.restaurant_menu,
                         color: _textMuted, size: 40),

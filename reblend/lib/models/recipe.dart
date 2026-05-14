@@ -51,6 +51,7 @@ class RecipeReview {
 class Recipe {
   final String id;
   final String name;
+  final String category;
   final String author;
   final String date;
   final double rating;
@@ -67,6 +68,7 @@ class Recipe {
   const Recipe({
     required this.id,
     required this.name,
+    required this.category,
     required this.author,
     required this.date,
     required this.rating,
@@ -88,6 +90,7 @@ final List<Recipe> sampleRecipes = [
   Recipe(
     id: '1',
     name: 'Pasta',
+    category: 'main dish',
     author: 'user',
     date: '01/01/2026',
     rating: 5.0,
@@ -120,6 +123,7 @@ final List<Recipe> sampleRecipes = [
   Recipe(
     id: '2',
     name: 'Pasta Primavera',
+    category: 'main dish',
     author: 'chef_anna',
     date: '15/02/2026',
     rating: 4.8,

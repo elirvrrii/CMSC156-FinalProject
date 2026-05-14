@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../widgets/recipe_card.dart';
+import '../services/recipe_service.dart';
 import 'recipe_detail.dart';
 import 'notifications_page.dart';
 
@@ -13,14 +14,45 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategory = 0;
+  final _recipeService = RecipeService();
+  List<Recipe> _allRecipes = [];
+  bool _isLoading = true;
+  String? _error;
 
   final List<String> _categories = ['main dish', 'side dish', 'appetizer', 'dessert'];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRecipes();
+  }
+
+  Future<void> _fetchRecipes() async {
+    try {
+      final recipes = await _recipeService.getAllRecipes();
+      setState(() {
+        _allRecipes = recipes;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Failed to load recipes: ${e.toString()}';
+      });
+    }
+  }
+
+  List<Recipe> get _filteredRecipes {
+    final selectedCat = _categories[_selectedCategory];
+    return _allRecipes.where((recipe) => recipe.category == selectedCat).toList();
+  }
 
   void _openRecipe(Recipe recipe) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (_, animation, __) => RecipeDetailPage(recipe: recipe),
-        transitionsBuilder: (_, animation, __, child) {
+        pageBuilder: (_, animation, _) => RecipeDetailPage(recipe: recipe),
+        transitionsBuilder: (_, animation, _, child) {
           return SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(1, 0),
@@ -184,16 +216,74 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Recipe list
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(top: 16, bottom: 16),
-                itemCount: sampleRecipes.length,
-                itemBuilder: (context, index) {
-                  return RecipeCard(
-                    recipe: sampleRecipes[index],
-                    onTap: () => _openRecipe(sampleRecipes[index]),
-                  );
-                },
-              ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF8FA67A),
+                      ),
+                    )
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: Color(0xFFE57373),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF888888),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _fetchRecipes,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF8FA67A),
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _filteredRecipes.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.no_meals_outlined,
+                                    size: 48,
+                                    color: Color(0xFFCCC0B8),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No ${_categories[_selectedCategory]} recipes yet',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF888888),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.only(top: 16, bottom: 16),
+                              itemCount: _filteredRecipes.length,
+                              itemBuilder: (context, index) {
+                                return RecipeCard(
+                                  recipe: _filteredRecipes[index],
+                                  onTap: () => _openRecipe(_filteredRecipes[index]),
+                                );
+                              },
+                            ),
             ),
           ],
         ),

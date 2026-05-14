@@ -169,7 +169,7 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                         onPanEnd: _isSwiping ? null : _onDragEnd,
                         child: AnimatedBuilder(
                           animation: _swipeController,
-                          builder: (_, __) {
+                          builder: (_, _) {
                             final offset = _isSwiping
                                 ? _swipeAnimation.value
                                 : _dragOffset;
@@ -357,7 +357,7 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                 child: Image.network(
                   twist.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     color: const Color(0xFFE8E0D0),
                     child: const Icon(Icons.restaurant_menu,
                         color: Color(0xFFADADAD), size: 40),

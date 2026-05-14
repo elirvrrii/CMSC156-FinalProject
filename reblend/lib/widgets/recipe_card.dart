@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../models/recipe.dart';
 import 'rate_recipe_sheet.dart';
 
@@ -37,17 +38,7 @@ class RecipeCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    recipe.imageUrl,
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200,
-                      color: const Color(0xFFE8E0D8),
-                      child: const Icon(Icons.image_outlined, size: 48, color: Color(0xFFADADAD)),
-                    ),
-                  ),
+                  child: _buildRecipeImage(recipe.imageUrl),
                 ),
                 // Action icons top-right
                 Positioned(
@@ -145,6 +136,48 @@ class RecipeCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecipeImage(String imagePath) {
+    // Check if it's a local file or URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      // Network image
+      return Image.network(
+        imagePath,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
+      );
+    } else {
+      // Local file
+      try {
+        final file = File(imagePath);
+        if (file.existsSync()) {
+          return Image.file(
+            file,
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _imageErrorPlaceholder(),
+          );
+        } else {
+          return _imageErrorPlaceholder();
+        }
+      } catch (e) {
+        return _imageErrorPlaceholder();
+      }
+    }
+  }
+
+  Widget _imageErrorPlaceholder() {
+    return Container(
+      height: 200,
+      color: const Color(0xFFE8E0D8),
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 48, color: Color(0xFFADADAD)),
       ),
     );
   }
