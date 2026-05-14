@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,10 +13,8 @@ class _ProfilePageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Mock data (replace with real backend later)
-  final int totalRecipes = 12;
-  final int totalTwists = 5;
-  final double avgRating = 4.8;
+  // Get the current user's ID
+  final String userId = FirebaseAuth.instance.currentUser?.uid ?? "";
 
   @override
   void initState() {
@@ -22,90 +22,122 @@ class _ProfilePageState extends State<ProfilePage>
     _tabController = TabController(length: 4, vsync: this);
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _handleLogout() async {
+    await FirebaseAuth.instance.signOut();
+    // AuthGate will see the logout and automatically switch to the LoginPage
   }
 
   @override
   Widget build(BuildContext context) {
+    // If no user is logged in, show a simple error
+    if (userId.isEmpty)
+      return const Scaffold(body: Center(child: Text("No user found")));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F1EC),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
+      body: StreamBuilder<DocumentSnapshot>(
+        // Pointing to the specific user document
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            // ─── Profile Header ─────────────────────────────
-            const CircleAvatar(
-              radius: 40,
-              backgroundColor: Color(0xFF8FA67A),
-              child: Icon(Icons.person, size: 40, color: Colors.white),
-            ),
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text("Profile not found"));
+          }
 
-            const SizedBox(height: 10),
+          // Extract the data safely
+          var userData = snapshot.data!.data() as Map<String, dynamic>;
 
-            const Text(
-              "Your Name",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          return SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
 
-            const SizedBox(height: 4),
+                // ─── Profile Header ─────────────────────────────
+                const CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Color(0xFF8FA67A),
+                  child: Icon(Icons.person, size: 40, color: Colors.white),
+                ),
 
-            const Text(
-              "@username",
-              style: TextStyle(color: Colors.grey),
-            ),
+                const SizedBox(height: 10),
 
-            const SizedBox(height: 16),
+                Text(
+                  userData['display_name'] ?? "Chef",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
 
-            // ─── Stats Row ─────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _statBox("Recipes", totalRecipes.toString()),
-                  _statBox("Twists", totalTwists.toString()),
-                  _statBox("Rating", avgRating.toString()),
-                ],
-              ),
-            ),
+                const SizedBox(height: 4),
 
-            const SizedBox(height: 16),
+                Text(
+                  userData['email'] ?? "@username",
+                  style: const TextStyle(color: Colors.grey),
+                ),
 
-            // ─── Tabs ─────────────────────────────
-            TabBar(
-              controller: _tabController,
-              labelColor: const Color(0xFF8FA67A),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF8FA67A),
-              tabs: const [
-                Tab(text: "My Recipes"),
-                Tab(text: "My Twists"),
-                Tab(text: "Settings"),
-                Tab(text: "Logout"),
+                const SizedBox(height: 16),
+
+                // ─── Stats Row ─────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _statBox(
+                        "Recipes",
+                        (userData['recipe_count'] ?? 0).toString(),
+                      ),
+                      _statBox(
+                        "Twists",
+                        (userData['twist_count'] ?? 0).toString(),
+                      ),
+                      _statBox(
+                        "Rating",
+                        (userData['avg_rating'] ?? 0.0).toString(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ─── Tabs ─────────────────────────────
+                TabBar(
+                  controller: _tabController,
+                  labelColor: const Color(0xFF8FA67A),
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: const Color(0xFF8FA67A),
+                  tabs: const [
+                    Tab(text: "My Recipes"),
+                    Tab(text: "My Twists"),
+                    Tab(text: "Settings"),
+                    Tab(text: "Logout"),
+                  ],
+                ),
+
+                // ─── Tab Views ─────────────────────────────
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildPlaceholder("Your Recipes List"),
+                      _buildPlaceholder("Your Twists List"),
+                      _buildSettings(),
+                      _buildLogout(context),
+                    ],
+                  ),
+                ),
               ],
             ),
-
-            // ─── Tab Views ─────────────────────────────
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildPlaceholder("Your Recipes List"),
-                  _buildPlaceholder("Your Twists List"),
-                  _buildSettings(),
-                  _buildLogout(context),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -116,16 +148,10 @@ class _ProfilePageState extends State<ProfilePage>
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.grey),
-        ),
+        Text(label, style: const TextStyle(color: Colors.grey)),
       ],
     );
   }
@@ -133,10 +159,7 @@ class _ProfilePageState extends State<ProfilePage>
   // ─── Placeholder Sections ─────────────────────────────
   Widget _buildPlaceholder(String text) {
     return Center(
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.grey),
-      ),
+      child: Text(text, style: const TextStyle(color: Colors.grey)),
     );
   }
 
@@ -152,14 +175,8 @@ class _ProfilePageState extends State<ProfilePage>
           leading: Icon(Icons.notifications_none),
           title: Text("Notifications"),
         ),
-        ListTile(
-          leading: Icon(Icons.lock_outline),
-          title: Text("Privacy"),
-        ),
-        ListTile(
-          leading: Icon(Icons.palette_outlined),
-          title: Text("Theme"),
-        ),
+        ListTile(leading: Icon(Icons.lock_outline), title: Text("Privacy")),
+        ListTile(leading: Icon(Icons.palette_outlined), title: Text("Theme")),
       ],
     );
   }
@@ -172,10 +189,7 @@ class _ProfilePageState extends State<ProfilePage>
           backgroundColor: Colors.redAccent,
           foregroundColor: Colors.white,
         ),
-        onPressed: () {
-          // Replace with auth logout later
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        },
+        onPressed: _handleLogout,
         child: const Text("Log Out"),
       ),
     );
