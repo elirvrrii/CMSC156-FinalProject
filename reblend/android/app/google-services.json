@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "890575293192",
+    "project_id": "reblend-4d60b",
+    "storage_bucket": "reblend-4d60b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890575293192:android:6dd513fa9f271874a83abd",
+        "android_client_info": {
+          "package_name": "com.example.reblend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkv43SmJAH3naxk_B6_GvktKRtjn261P4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
