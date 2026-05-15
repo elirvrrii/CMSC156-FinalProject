@@ -389,6 +389,40 @@ class RecipeService {
     }
   }
 
+  /// Reject a twist: notify the twist author and remove the twist document.
+  Future<void> rejectTwist(String recipeId, {String? reason}) async {
+    try {
+      final recipeRef = _firestore.collection(_recipesCollection).doc(recipeId);
+      final recipeDoc = await recipeRef.get();
+
+      if (!recipeDoc.exists) return;
+
+      final data = recipeDoc.data() as Map<String, dynamic>;
+      final twistAuthorId = data['userId'] as String?;
+      final twistName = data['name'] as String? ?? 'Your twist';
+
+      // Delete the twist document and update counters
+      await recipeRef.delete();
+
+      if (twistAuthorId != null) {
+        // Add a notification for the twist author
+        await _firestore
+            .collection('users')
+            .doc(twistAuthorId)
+            .collection('notifications')
+            .add({
+          'title': 'Your twist "$twistName" was declined',
+          'body': reason ?? 'The recipe owner declined your twist.',
+          'timestamp': FieldValue.serverTimestamp(),
+          'type': 'twist_rejected',
+          'recipeId': recipeId,
+        });
+      }
+    } catch (e) {
+      throw Exception('Failed to reject twist: $e');
+    }
+  }
+
   Future<void> addRecipeReview({
     required String recipeId,
     required double rating,

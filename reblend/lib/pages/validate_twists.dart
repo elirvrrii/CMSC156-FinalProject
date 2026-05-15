@@ -29,19 +29,14 @@ class ValidateTwistsPage extends StatefulWidget {
   State<ValidateTwistsPage> createState() => _ValidateTwistsPageState();
 }
 
-class _ValidateTwistsPageState extends State<ValidateTwistsPage>
-    with TickerProviderStateMixin {
+class _ValidateTwistsPageState extends State<ValidateTwistsPage> {
   int _currentIndex = 0;
   int _selectedTab = 0;
 
   // ── Drag state ─────────────────────────────────────────
   Offset _dragOffset = Offset.zero;
-  bool _isAnimating = false;
-
-  late AnimationController _flyController;
-  late AnimationController _snapController;
-  Animation<Offset>? _flyAnimation;
-  Animation<Offset>? _snapAnimation;
+  // notifier to avoid rebuilding the whole page on every drag update
+  late ValueNotifier<Offset> _dragNotifier;
 
   // ── Overlay opacities ──────────────────────────────────
   double get _rejectOpacity =>
@@ -52,90 +47,50 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
   @override
   void initState() {
     super.initState();
-    _flyController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-    );
-    _snapController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
+    _dragNotifier = ValueNotifier<Offset>(_dragOffset);
   }
 
   @override
   void dispose() {
-    _flyController.dispose();
-    _snapController.dispose();
+    _dragNotifier.dispose();
     super.dispose();
   }
 
   // ── Drag handlers ──────────────────────────────────────
   void _onDragUpdate(DragUpdateDetails d) {
-    if (_isAnimating) return;
-    setState(() => _dragOffset += d.delta);
+    _dragOffset += d.delta;
+    _dragNotifier.value = _dragOffset;
   }
-
   void _onDragEnd(DragEndDetails _, int total) {
-    if (_isAnimating) return;
     if (_dragOffset.dx > 110) {
       _flyOut(approve: true, total: total);
     } else if (_dragOffset.dx < -110) {
       _flyOut(approve: false, total: total);
     } else {
-      _snapBack();
+      _dragOffset = Offset.zero;
+      _dragNotifier.value = _dragOffset;
     }
   }
 
-  // ── Fly off screen ─────────────────────────────────────
+  // ── Advance without animation ───────────────────────────
   Future<void> _flyOut({required bool approve, required int total}) async {
-    if (_isAnimating || total == 0) return;
-    setState(() => _isAnimating = true);
-
-    final endX = approve ? 800.0 : -800.0;
-    final endY = _dragOffset.dy + (approve ? -80.0 : 80.0);
-
-    _flyController.reset();
-    _flyAnimation = Tween<Offset>(begin: _dragOffset, end: Offset(endX, endY))
-        .animate(
-          CurvedAnimation(parent: _flyController, curve: Curves.easeInCubic),
-        );
-
-    await _flyController.forward();
-
-    // ── approve → validate in Firestore; reject → just skip ──
-    // (recipe stays in Firestore either way; only approve marks validated:true)
+    if (total == 0) return;
     setState(() {
       _currentIndex = (_currentIndex + 1) % total;
       _dragOffset = Offset.zero;
       _selectedTab = 0;
-      _isAnimating = false;
     });
-    _flyController.reset();
   }
 
-  // ── Snap back to centre ────────────────────────────────
+  // retained API for button flows; instant reset
   Future<void> _snapBack() async {
-    if (_isAnimating) return;
-    setState(() => _isAnimating = true);
-
-    _snapController.reset();
-    _snapAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero)
-        .animate(
-          CurvedAnimation(parent: _snapController, curve: Curves.elasticOut),
-        );
-
-    await _snapController.forward();
-
-    setState(() {
-      _dragOffset = Offset.zero;
-      _isAnimating = false;
-    });
-    _snapController.reset();
+    _dragOffset = Offset.zero;
+    _dragNotifier.value = _dragOffset;
   }
 
   // ── Button triggers ────────────────────────────────────
   Future<void> _handleApprove(List<Recipe> twists) async {
-    if (_isAnimating || twists.isEmpty) return;
+    if (twists.isEmpty) return;
     final twist = twists[_currentIndex];
     await RecipeService().validateTwist(twist.id);
     if (mounted) {
@@ -154,8 +109,28 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
   }
 
   Future<void> _handleReject(List<Recipe> twists) async {
-    if (_isAnimating || twists.isEmpty) return;
-    // Just skip — recipe stays in Firestore, not deleted
+    if (twists.isEmpty) return;
+    final twist = twists[_currentIndex];
+    try {
+      await RecipeService().rejectTwist(twist.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"${twist.name}" has been declined. The author was notified.'),
+            backgroundColor: const Color(0xFFC8956C),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to decline twist: $e')),
+        );
+      }
+    }
+
     await _flyOut(approve: false, total: twists.length);
   }
 
@@ -294,63 +269,11 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                           ),
                         ),
 
-                      // ── Main draggable card ─────────────────────
+                      // ── Main (static) card — swiping disabled ───
                       Positioned.fill(
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 104),
-                          child: GestureDetector(
-                            onPanUpdate: _isAnimating ? null : _onDragUpdate,
-                            onPanEnd: _isAnimating
-                                ? null
-                                : (d) => _onDragEnd(d, allTwists.length),
-                            child: AnimatedBuilder(
-                              animation: Listenable.merge([
-                                _flyController,
-                                _snapController,
-                              ]),
-                              builder: (_, __) {
-                                Offset offset = _dragOffset;
-                                if (_flyController.isAnimating &&
-                                    _flyAnimation != null) {
-                                  offset = _flyAnimation!.value;
-                                } else if (_snapController.isAnimating &&
-                                    _snapAnimation != null) {
-                                  offset = _snapAnimation!.value;
-                                }
-
-                                final angle = (offset.dx / 380).clamp(
-                                  -0.22,
-                                  0.22,
-                                );
-
-                                return Transform.translate(
-                                  offset: offset,
-                                  child: Transform.rotate(
-                                    angle: angle,
-                                    child: Stack(
-                                      children: [
-                                        _buildCard(twist),
-                                        if (_rejectOpacity > 0)
-                                          _buildOverlay(
-                                            label: 'SKIP',
-                                            color: const Color(0xFFC8956C),
-                                            opacity: _rejectOpacity,
-                                            icon: Icons.arrow_forward_rounded,
-                                          ),
-                                        if (_approveOpacity > 0)
-                                          _buildOverlay(
-                                            label: 'APPROVE',
-                                            color: const Color(0xFF8FA67A),
-                                            opacity: _approveOpacity,
-                                            icon: Icons.check_rounded,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                          child: _buildCard(twist),
                         ),
                       ),
 
@@ -421,8 +344,7 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
             Row(
               children: List.generate(count.clamp(0, 6), (i) {
                 final isActive = i == _currentIndex % count.clamp(1, 6);
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
+                return Container(
                   margin: const EdgeInsets.only(left: 4),
                   width: isActive ? 18 : 6,
                   height: 6,
@@ -657,15 +579,12 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _selectedTab == 0
-                    ? _IngredientsTab(
-                        key: const ValueKey(0),
-                        ingredients: twist.ingredients,
-                      )
-                    : _ProcedureTab(key: const ValueKey(1), steps: twist.steps),
-              ),
+              child: _selectedTab == 0
+                  ? _IngredientsTab(
+                      key: const ValueKey(0),
+                      ingredients: twist.ingredients,
+                    )
+                  : _ProcedureTab(key: const ValueKey(1), steps: twist.steps),
             ),
           ),
         ],
@@ -1086,8 +1005,7 @@ class _TabChip extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+        child: Container(
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF8FA67A) : Colors.transparent,
