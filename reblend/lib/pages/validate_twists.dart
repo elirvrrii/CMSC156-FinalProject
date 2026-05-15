@@ -1002,7 +1002,6 @@ class _ProcedureTab extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius: BorderRadius.circular(12),
                 border: Border(
                   left: BorderSide(color: border, width: 4),
                   top: BorderSide(color: border.withOpacity(0.25)),
