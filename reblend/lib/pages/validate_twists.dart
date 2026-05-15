@@ -5,21 +5,21 @@ import '../models/recipe.dart';
 import '../services/recipe_service.dart';
 
 class _DiffColors {
-  static const addedBg     = Color(0xFFE8F5E9);
+  static const addedBg = Color(0xFFE8F5E9);
   static const addedBorder = Color(0xFF8FA67A);
-  static const addedText   = Color(0xFF4A7C59);
+  static const addedText = Color(0xFF4A7C59);
 
-  static const removedBg     = Color(0xFFFFEBEE);
+  static const removedBg = Color(0xFFFFEBEE);
   static const removedBorder = Color(0xFFE57373);
-  static const removedText   = Color(0xFFC62828);
+  static const removedText = Color(0xFFC62828);
 
-  static const modifiedBg     = Color(0xFFFFF8E1);
+  static const modifiedBg = Color(0xFFFFF8E1);
   static const modifiedBorder = Color(0xFFFFB74D);
-  static const modifiedText   = Color(0xFFE65100);
+  static const modifiedText = Color(0xFFE65100);
 
-  static const unchangedBg     = Colors.white;
+  static const unchangedBg = Colors.white;
   static const unchangedBorder = Color(0xFFDDD8D0);
-  static const unchangedText   = Color(0xFF4A4A4A);
+  static const unchangedText = Color(0xFF4A4A4A);
 }
 
 class ValidateTwistsPage extends StatefulWidget {
@@ -31,7 +31,6 @@ class ValidateTwistsPage extends StatefulWidget {
 
 class _ValidateTwistsPageState extends State<ValidateTwistsPage>
     with TickerProviderStateMixin {
-
   int _currentIndex = 0;
   int _selectedTab = 0;
 
@@ -92,14 +91,14 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
     if (_isAnimating || total == 0) return;
     setState(() => _isAnimating = true);
 
-    final endX  = approve ? 800.0 : -800.0;
-    final endY  = _dragOffset.dy + (approve ? -80.0 : 80.0);
+    final endX = approve ? 800.0 : -800.0;
+    final endY = _dragOffset.dy + (approve ? -80.0 : 80.0);
 
     _flyController.reset();
-    _flyAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset(endX, endY),
-    ).animate(CurvedAnimation(parent: _flyController, curve: Curves.easeInCubic));
+    _flyAnimation = Tween<Offset>(begin: _dragOffset, end: Offset(endX, endY))
+        .animate(
+          CurvedAnimation(parent: _flyController, curve: Curves.easeInCubic),
+        );
 
     await _flyController.forward();
 
@@ -107,9 +106,9 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
     // (recipe stays in Firestore either way; only approve marks validated:true)
     setState(() {
       _currentIndex = (_currentIndex + 1) % total;
-      _dragOffset   = Offset.zero;
-      _selectedTab  = 0;
-      _isAnimating  = false;
+      _dragOffset = Offset.zero;
+      _selectedTab = 0;
+      _isAnimating = false;
     });
     _flyController.reset();
   }
@@ -120,15 +119,15 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
     setState(() => _isAnimating = true);
 
     _snapController.reset();
-    _snapAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _snapController, curve: Curves.elasticOut));
+    _snapAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _snapController, curve: Curves.elasticOut),
+        );
 
     await _snapController.forward();
 
     setState(() {
-      _dragOffset  = Offset.zero;
+      _dragOffset = Offset.zero;
       _isAnimating = false;
     });
     _snapController.reset();
@@ -142,7 +141,9 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('"${twist.name}" approved and now visible on the home screen!'),
+          content: Text(
+            '"${twist.name}" approved and now visible on the home screen!',
+          ),
           backgroundColor: const Color(0xFF8FA67A),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
@@ -173,6 +174,7 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
           .collection('recipes')
           .where('hasTwist', isEqualTo: true)
           .where('validated', isEqualTo: false)
+          .where('parentUserId', isEqualTo: currentUid)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -194,11 +196,12 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
 
         // ── Only show twists where the parent recipe belongs to currentUser
         final allTwists = (snapshot.data?.docs ?? [])
-            .map((doc) => Recipe.fromFirestore(
-                  doc.id,
-                  doc.data() as Map<String, dynamic>,
-                ))
-            .where((r) => r.parentUserId == currentUid)
+            .map(
+              (doc) => Recipe.fromFirestore(
+                doc.id,
+                doc.data() as Map<String, dynamic>,
+              ),
+            )
             .toList();
 
         if (allTwists.isEmpty) {
@@ -315,8 +318,10 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                                   offset = _snapAnimation!.value;
                                 }
 
-                                final angle =
-                                    (offset.dx / 380).clamp(-0.22, 0.22);
+                                final angle = (offset.dx / 380).clamp(
+                                  -0.22,
+                                  0.22,
+                                );
 
                                 return Transform.translate(
                                   offset: offset,
@@ -370,69 +375,72 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
   // ── Header ─────────────────────────────────────────────
 
   Widget _buildHeader(int count) {
-  final canPop = Navigator.of(context).canPop();  // ← check first
+    final canPop = Navigator.of(context).canPop(); // ← check first
 
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
-    child: Row(
-      children: [
-        if (canPop)                                // ← only show if there's something to pop
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 18, color: Color(0xFF4A4A4A)),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          )
-        else
-          const SizedBox(width: 40),              // ← keep layout balanced
-        const Spacer(),
-        Column(
-          children: [
-            const Text(
-              'Validate Twists',
-              style: TextStyle(
-                fontFamily: 'Georgia',
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2E2E2E),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+      child: Row(
+        children: [
+          if (canPop) // ← only show if there's something to pop
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: Color(0xFF4A4A4A),
               ),
-            ),
-            if (count > 0)
-              Text(
-                '$count pending',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9E9E9E),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            )
+          else
+            const SizedBox(width: 40), // ← keep layout balanced
+          const Spacer(),
+          Column(
+            children: [
+              const Text(
+                'Validate Twists',
+                style: TextStyle(
+                  fontFamily: 'Georgia',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2E2E2E),
                 ),
               ),
-          ],
-        ),
-        const Spacer(),
-        if (count > 0)
-          Row(
-            children: List.generate(count.clamp(0, 6), (i) {
-              final isActive = i == _currentIndex % count.clamp(1, 6);
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.only(left: 4),
-                width: isActive ? 18 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFF8FA67A)
-                      : const Color(0xFFCCCCCC),
-                  borderRadius: BorderRadius.circular(3),
+              if (count > 0)
+                Text(
+                  '$count pending',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF9E9E9E),
+                  ),
                 ),
-              );
-            }),
-          )
-        else
-          const SizedBox(width: 40),
-      ],
-    ),
-  );
-}
+            ],
+          ),
+          const Spacer(),
+          if (count > 0)
+            Row(
+              children: List.generate(count.clamp(0, 6), (i) {
+                final isActive = i == _currentIndex % count.clamp(1, 6);
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.only(left: 4),
+                  width: isActive ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFF8FA67A)
+                        : const Color(0xFFCCCCCC),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            )
+          else
+            const SizedBox(width: 40),
+        ],
+      ),
+    );
+  }
 
   // ── Overlay ────────────────────────────────────────────
 
@@ -458,7 +466,9 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
               padding: const EdgeInsets.symmetric(horizontal: 28),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.15),
                   border: Border.all(color: color, width: 2.5),
@@ -518,8 +528,11 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: const Color(0xFFE8E0D0),
-                    child: const Icon(Icons.restaurant_menu,
-                        color: Color(0xFFADADAD), size: 40),
+                    child: const Icon(
+                      Icons.restaurant_menu,
+                      color: Color(0xFFADADAD),
+                      size: 40,
+                    ),
                   ),
                 ),
                 // Gradient overlay for text legibility
@@ -561,8 +574,11 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          const Icon(Icons.person_outline_rounded,
-                              size: 12, color: Colors.white70),
+                          const Icon(
+                            Icons.person_outline_rounded,
+                            size: 12,
+                            color: Colors.white70,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '@${twist.author}',
@@ -574,8 +590,11 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                           ),
                           if (twist.parentRecipeName != null) ...[
                             const SizedBox(width: 8),
-                            const Icon(Icons.subdirectory_arrow_right_rounded,
-                                size: 12, color: Color(0xFFFFCC80)),
+                            const Icon(
+                              Icons.subdirectory_arrow_right_rounded,
+                              size: 12,
+                              color: Color(0xFFFFCC80),
+                            ),
                             const SizedBox(width: 3),
                             Flexible(
                               child: Text(
@@ -618,12 +637,16 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                   _TabChip(
                     label: 'Ingredients',
                     isSelected: _selectedTab == 0,
-                    onTap: isBack ? null : () => setState(() => _selectedTab = 0),
+                    onTap: isBack
+                        ? null
+                        : () => setState(() => _selectedTab = 0),
                   ),
                   _TabChip(
                     label: 'Procedure',
                     isSelected: _selectedTab == 1,
-                    onTap: isBack ? null : () => setState(() => _selectedTab = 1),
+                    onTap: isBack
+                        ? null
+                        : () => setState(() => _selectedTab = 1),
                   ),
                 ],
               ),
@@ -641,10 +664,7 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                         key: const ValueKey(0),
                         ingredients: twist.ingredients,
                       )
-                    : _ProcedureTab(
-                        key: const ValueKey(1),
-                        steps: twist.steps,
-                      ),
+                    : _ProcedureTab(key: const ValueKey(1), steps: twist.steps),
               ),
             ),
           ),
@@ -654,10 +674,18 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
   }
 
   Widget _buildChangeBadges(Recipe twist) {
-    final added    = twist.ingredients.where((i) => i.status == IngredientStatus.added).length;
-    final removed  = twist.ingredients.where((i) => i.status == IngredientStatus.removed).length;
-    final modified = twist.ingredients.where((i) => i.status == IngredientStatus.modified).length;
-    final stepsChanged = twist.steps.where((s) => s.status != StepStatus.unchanged).length;
+    final added = twist.ingredients
+        .where((i) => i.status == IngredientStatus.added)
+        .length;
+    final removed = twist.ingredients
+        .where((i) => i.status == IngredientStatus.removed)
+        .length;
+    final modified = twist.ingredients
+        .where((i) => i.status == IngredientStatus.modified)
+        .length;
+    final stepsChanged = twist.steps
+        .where((s) => s.status != StepStatus.unchanged)
+        .length;
 
     if (added == 0 && removed == 0 && modified == 0 && stepsChanged == 0) {
       return const SizedBox.shrink();
@@ -670,7 +698,10 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
         if (added > 0)
           _Badge(label: '+$added added', color: _DiffColors.addedBorder),
         if (modified > 0)
-          _Badge(label: '~$modified modified', color: _DiffColors.modifiedBorder),
+          _Badge(
+            label: '~$modified modified',
+            color: _DiffColors.modifiedBorder,
+          ),
         if (removed > 0)
           _Badge(label: '−$removed removed', color: _DiffColors.removedBorder),
         if (stepsChanged > 0)
@@ -713,8 +744,11 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.arrow_forward_rounded,
-                      color: Color(0xFFC8956C), size: 28),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Color(0xFFC8956C),
+                    size: 28,
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
@@ -748,8 +782,11 @@ class _ValidateTwistsPageState extends State<ValidateTwistsPage>
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 34),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 34,
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
@@ -831,26 +868,26 @@ class _IngredientChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = ingredient.status;
     final bg = switch (s) {
-      IngredientStatus.added    => _DiffColors.addedBg,
-      IngredientStatus.removed  => _DiffColors.removedBg,
+      IngredientStatus.added => _DiffColors.addedBg,
+      IngredientStatus.removed => _DiffColors.removedBg,
       IngredientStatus.modified => _DiffColors.modifiedBg,
       IngredientStatus.unchanged => _DiffColors.unchangedBg,
     };
     final border = switch (s) {
-      IngredientStatus.added    => _DiffColors.addedBorder,
-      IngredientStatus.removed  => _DiffColors.removedBorder,
+      IngredientStatus.added => _DiffColors.addedBorder,
+      IngredientStatus.removed => _DiffColors.removedBorder,
       IngredientStatus.modified => _DiffColors.modifiedBorder,
       IngredientStatus.unchanged => _DiffColors.unchangedBorder,
     };
     final text = switch (s) {
-      IngredientStatus.added    => _DiffColors.addedText,
-      IngredientStatus.removed  => _DiffColors.removedText,
+      IngredientStatus.added => _DiffColors.addedText,
+      IngredientStatus.removed => _DiffColors.removedText,
       IngredientStatus.modified => _DiffColors.modifiedText,
       IngredientStatus.unchanged => _DiffColors.unchangedText,
     };
     final IconData? icon = switch (s) {
-      IngredientStatus.added    => Icons.add_circle_outline,
-      IngredientStatus.removed  => Icons.remove_circle_outline,
+      IngredientStatus.added => Icons.add_circle_outline,
+      IngredientStatus.removed => Icons.remove_circle_outline,
       IngredientStatus.modified => Icons.edit_outlined,
       IngredientStatus.unchanged => null,
     };
@@ -891,7 +928,8 @@ class _IngredientChip extends StatelessWidget {
               ),
             ],
           ),
-          if (s == IngredientStatus.modified && ingredient.originalLabel != null) ...[
+          if (s == IngredientStatus.modified &&
+              ingredient.originalLabel != null) ...[
             const SizedBox(height: 2),
             Text(
               ingredient.originalLabel!,
@@ -924,37 +962,37 @@ class _ProcedureTab extends StatelessWidget {
             spacing: 12,
             runSpacing: 4,
             children: const [
-              _LegendDot(color: _DiffColors.addedBorder,    label: 'New step'),
+              _LegendDot(color: _DiffColors.addedBorder, label: 'New step'),
               _LegendDot(color: _DiffColors.modifiedBorder, label: 'Modified'),
-              _LegendDot(color: _DiffColors.removedBorder,  label: 'Removed'),
+              _LegendDot(color: _DiffColors.removedBorder, label: 'Removed'),
             ],
           ),
         ),
         ...steps.asMap().entries.map((e) {
           final step = e.value;
-          final s    = step.status;
+          final s = step.status;
 
           final bg = switch (s) {
-            StepStatus.added    => _DiffColors.addedBg,
-            StepStatus.removed  => _DiffColors.removedBg,
+            StepStatus.added => _DiffColors.addedBg,
+            StepStatus.removed => _DiffColors.removedBg,
             StepStatus.modified => _DiffColors.modifiedBg,
             StepStatus.unchanged => Colors.white,
           };
           final border = switch (s) {
-            StepStatus.added    => _DiffColors.addedBorder,
-            StepStatus.removed  => _DiffColors.removedBorder,
+            StepStatus.added => _DiffColors.addedBorder,
+            StepStatus.removed => _DiffColors.removedBorder,
             StepStatus.modified => _DiffColors.modifiedBorder,
             StepStatus.unchanged => const Color(0xFFEAE5DE),
           };
           final circle = switch (s) {
-            StepStatus.added    => _DiffColors.addedBorder,
-            StepStatus.removed  => _DiffColors.removedBorder,
+            StepStatus.added => _DiffColors.addedBorder,
+            StepStatus.removed => _DiffColors.removedBorder,
             StepStatus.modified => _DiffColors.modifiedBorder,
             StepStatus.unchanged => const Color(0xFF8FA67A),
           };
           final textColor = switch (s) {
-            StepStatus.added    => _DiffColors.addedText,
-            StepStatus.removed  => _DiffColors.removedText,
+            StepStatus.added => _DiffColors.addedText,
+            StepStatus.removed => _DiffColors.removedText,
             StepStatus.modified => _DiffColors.modifiedText,
             StepStatus.unchanged => const Color(0xFF4A4A4A),
           };
@@ -979,7 +1017,10 @@ class _ProcedureTab extends StatelessWidget {
                   Container(
                     width: 22,
                     height: 22,
-                    decoration: BoxDecoration(color: circle, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      color: circle,
+                      shape: BoxShape.circle,
+                    ),
                     alignment: Alignment.center,
                     child: Text(
                       '${e.key + 1}',
@@ -995,14 +1036,16 @@ class _ProcedureTab extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (s == StepStatus.modified && step.originalText != null) ...[
+                        if (s == StepStatus.modified &&
+                            step.originalText != null) ...[
                           Text(
                             step.originalText!,
                             style: TextStyle(
                               fontSize: 11.5,
                               color: _DiffColors.modifiedText.withOpacity(0.6),
                               decoration: TextDecoration.lineThrough,
-                              decorationColor: _DiffColors.modifiedText.withOpacity(0.6),
+                              decorationColor: _DiffColors.modifiedText
+                                  .withOpacity(0.6),
                               height: 1.4,
                             ),
                           ),
@@ -1082,7 +1125,11 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }
@@ -1099,11 +1146,15 @@ class _LegendDot extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8, height: 8,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
-        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF888888))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: Color(0xFF888888)),
+        ),
       ],
     );
   }

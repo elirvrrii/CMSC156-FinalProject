@@ -25,13 +25,16 @@ class RecipeIngredient {
   }
 
   // Safe factory constructor to parse strings or objects from Firestore.
-  factory RecipeIngredient.fromDynamic(dynamic item) => RecipeIngredient.fromMap(item);
+  factory RecipeIngredient.fromDynamic(dynamic item) =>
+      RecipeIngredient.fromMap(item);
 
   factory RecipeIngredient.fromMap(dynamic map) {
     if (map is String) {
       return RecipeIngredient(label: map, status: IngredientStatus.unchanged);
     }
-    final data = map is Map ? Map<String, dynamic>.from(map) : <String, dynamic>{};
+    final data = map is Map
+        ? Map<String, dynamic>.from(map)
+        : <String, dynamic>{};
     return RecipeIngredient(
       label: data['label'] ?? '',
       status: _parseStatus(data['status'] ?? 'unchanged'),
@@ -67,7 +70,9 @@ class RecipeStep {
     if (map is String) {
       return RecipeStep(text: map, status: StepStatus.unchanged);
     }
-    final data = map is Map ? Map<String, dynamic>.from(map) : <String, dynamic>{};
+    final data = map is Map
+        ? Map<String, dynamic>.from(map)
+        : <String, dynamic>{};
     return RecipeStep(
       text: data['text'] ?? '',
       status: _parseStatus(data['status'] ?? 'unchanged'),
@@ -90,7 +95,8 @@ class RecipeReview {
   });
 
   // Converts a Firestore Map safely into a RecipeReview object.
-  factory RecipeReview.fromJson(Map<String, dynamic> json) => RecipeReview.fromMap(json);
+  factory RecipeReview.fromJson(Map<String, dynamic> json) =>
+      RecipeReview.fromMap(json);
 
   factory RecipeReview.fromMap(Map<String, dynamic> map) {
     return RecipeReview(
@@ -168,14 +174,19 @@ class Recipe {
       reviewCount: data['reviewCount'] ?? 0,
       imageUrl: data['imageUrl'] ?? '',
       hasTwist: data['hasTwist'] ?? false,
+      parentUserId: data['parentUserId'],
       parentRecipeId: data['parentRecipeId'],
       parentRecipeName: data['parentRecipeName'],
       parentRecipeAuthor: data['parentRecipeAuthor'],
-      ingredients: rawIngredients.map((item) => RecipeIngredient.fromDynamic(item)).toList(),
+      ingredients: rawIngredients
+          .map((item) => RecipeIngredient.fromDynamic(item))
+          .toList(),
       steps: rawSteps.map((item) => RecipeStep.fromDynamic(item)).toList(),
       reviews: rawReviews
           .whereType<Map>()
-          .map((review) => RecipeReview.fromMap(Map<String, dynamic>.from(review)))
+          .map(
+            (review) => RecipeReview.fromMap(Map<String, dynamic>.from(review)),
+          )
           .toList(),
       validated: data['validated'] ?? false,
     );

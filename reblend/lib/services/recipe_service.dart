@@ -176,7 +176,8 @@ class RecipeService {
         'rating': 0.0,
         'reviewCount': 0,
         'hasTwist': true,
-        'parentUserId': parentRecipe.userId,   
+        'validated': false,
+        'parentUserId': parentRecipe.userId,
         'parentRecipeId': parentRecipeId,
         'parentRecipeName': parentRecipe.name,
         'parentRecipeAuthor': parentRecipe.author,
@@ -266,6 +267,8 @@ class RecipeService {
       reviewCount: data['reviewCount'] ?? 0,
       imageUrl: data['imageUrl'] ?? '',
       hasTwist: data['hasTwist'] ?? false,
+      validated: data['validated'] ?? false,
+      parentUserId: data['parentUserId'],
       parentRecipeId: data['parentRecipeId'],
       parentRecipeName: data['parentRecipeName'],
       parentRecipeAuthor: data['parentRecipeAuthor'],
@@ -402,8 +405,12 @@ class RecipeService {
   }
 
   Future<void> validateTwist(String recipeId) async {
-  await _firestore.collection(_recipesCollection).doc(recipeId).update({
-    'validated': true,
-  });
-}
+    try {
+      await _firestore.collection(_recipesCollection).doc(recipeId).update({
+        'validated': true,
+      });
+    } catch (e) {
+      throw Exception('Failed to validate twist: $e');
+    }
+  }
 }
