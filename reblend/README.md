@@ -11,12 +11,6 @@ FlavorFuse is a recipe-sharing app that lets users discover new recipes and crea
 *   **The Twist System:** Brief description of a core app capability.
 *   **User Profile:** 
 
-## 📸 Screenshots
-
-|   Home Screen   | Feature Screen  |    Settings     |
-| :-------------: | :-------------: | :-------------: |
-| [Link to Image] | [Link to Image] | [Link to Image] |
-
 ---
 
 ## 🛠️ Tech Stack & Architecture
