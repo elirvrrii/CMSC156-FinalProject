@@ -90,12 +90,22 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
     );
   }
 
-  Future<void> _refresh() async {
-    setState(() {
-      _recipesFuture = _loadMyRecipes();
-    });
-    await _recipesFuture;
+Future<void> _refresh() async {
+  setState(() {
+    _recipesFuture = _loadMyRecipes();
+  });
+  await _recipesFuture;
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Recipes refreshed'),
+        duration: Duration(seconds: 1),
+        backgroundColor: Color(0xFF8FA67A),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -232,6 +242,7 @@ class _MyRecipesScreenState extends State<MyRecipesScreen> {
                       itemBuilder: (context, index) {
                         return RecipeCard(
                           recipe: recipes[index],
+                          isOwner: true,
                           onTap: () => _openRecipe(recipes[index]),
                         );
                       },

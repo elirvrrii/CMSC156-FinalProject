@@ -157,16 +157,65 @@ class _RecipeDetailPageState extends State<RecipeDetailPage>
                           ),
                         ),
 
-                        if (recipe.parentRecipeName != null && recipe.parentRecipeAuthor != null)
-                        Text(
-                          'orig. recipe by @${recipe.parentRecipeAuthor}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFFC8956C),
-                            fontWeight: FontWeight.w400,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
+                        if (recipe.parentRecipeId != null && recipe.parentRecipeName != null && recipe.parentRecipeAuthor != null)
+  GestureDetector(
+    onTap: () async {
+  try {
+    final parentRecipe = await RecipeService().getRecipeById(recipe.parentRecipeId!);
+    if (parentRecipe == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Original recipe no longer exists'),
+            backgroundColor: Color(0xFFE57373),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+    if (context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RecipeDetailPage(recipe: parentRecipe),
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not load original recipe'),
+          backgroundColor: Color(0xFFE57373),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+},
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.link_rounded,
+          size: 11,
+          color: Color(0xFFC8956C),
+        ),
+        const SizedBox(width: 3),
+        Text(
+          'orig. recipe by @${recipe.parentRecipeAuthor}',
+          style: const TextStyle(
+            fontSize: 11,
+            color: Color(0xFFC8956C),
+            fontWeight: FontWeight.w400,
+            fontStyle: FontStyle.italic,
+            decoration: TextDecoration.underline,
+            decorationColor: Color(0xFFC8956C),
+          ),
+        ),
+      ],
+    ),
+  ),
                       ],
                     ),
 

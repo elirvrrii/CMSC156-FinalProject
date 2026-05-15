@@ -6,7 +6,7 @@ import 'recipe_detail.dart';
 import 'notifications_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'main_screen.dart';
-import '../widgets/rate_recipe_sheet.dart'; 
+import '../widgets/rate_recipe_sheet.dart';
 import 'add_recipe_page.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -23,12 +23,23 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String? _error;
 
+  // ── Search ──────────────────────────────────────────────
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  // ────────────────────────────────────────────────────────
+
   final List<String> _categories = ['main dish', 'side dish', 'appetizer', 'dessert'];
 
   @override
   void initState() {
     super.initState();
     _fetchRecipes();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchRecipes() async {
@@ -49,14 +60,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Recipe> get _filteredRecipes {
     final selectedCat = _categories[_selectedCategory];
-    return _allRecipes.where((recipe) => recipe.category == selectedCat).toList();
+    final byCategory = _allRecipes.where((r) => r.category == selectedCat);
+
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return byCategory.toList();
+
+    return byCategory
+        .where((r) =>
+            r.name.toLowerCase().contains(query) ||
+            r.category.toLowerCase().contains(query))
+        .toList();
   }
 
   void _openRecipe(Recipe recipe) {
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (_, animation, _) => RecipeDetailPage(recipe: recipe),
-        transitionsBuilder: (_, animation, _, child) {
+        pageBuilder: (_, animation, __) => RecipeDetailPage(recipe: recipe),
+        transitionsBuilder: (_, animation, __, child) {
           return SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(1, 0),
@@ -77,21 +97,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar
+            // ── Top bar ──────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationsPage(),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                    ),
                     child: const Icon(
                       Icons.notifications_none_rounded,
                       size: 24,
@@ -101,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     children: const [
                       Text(
-                        'App Name',
+                        'FlavorFuse',
                         style: TextStyle(
                           fontFamily: 'serif',
                           fontSize: 26,
@@ -111,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Text(
-                        'subtitle.',
+                        'blend & discover.',
                         style: TextStyle(
                           fontSize: 13,
                           color: Color(0xFF8FA67A),
@@ -121,13 +137,34 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  const Icon(Icons.logout_rounded,
-                      size: 22, color: Color(0xFF4A4A4A)),
+                  // ── Replaced logout with refresh ──────────
+// ── Reset / Refetch button ────────────────────────────
+// ── Reset / Refetch button ────────────────────────────
+IconButton(
+  onPressed: () async {
+    await _fetchRecipes();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Recipes refreshed'),
+          duration: Duration(seconds: 1),
+          backgroundColor: Color(0xFF8FA67A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  },
+  icon: const Icon(
+    Icons.refresh_rounded,
+    size: 24,
+    color: Color(0xFF4A4A4A),
+  ),
+),
                 ],
               ),
             ),
 
-            // Search bar
+            // ── Search bar (now functional) ───────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Container(
@@ -143,26 +180,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-                child: Row(
-                  children: const [
-                    SizedBox(width: 14),
-                    Icon(Icons.search_rounded, color: Color(0xFFADADAD), size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Search for your preferred recipe',
-                        style: TextStyle(
-                          color: Color(0xFFBBBBBB),
-                          fontSize: 13.5,
-                        ),
-                      ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  decoration: const InputDecoration(
+                    hintText: 'Search for your preferred recipe',
+                    hintStyle: TextStyle(
+                      color: Color(0xFFBBBBBB),
+                      fontSize: 13.5,
                     ),
-                  ],
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFFADADAD),
+                      size: 20,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(vertical: 13),
+                  ),
                 ),
               ),
             ),
 
-            // Categories
+            // ── Categories ───────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(
@@ -218,32 +258,25 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Recipe list
+            // ── Recipe list ──────────────────────────────────
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF8FA67A),
-                      ),
+                      child: CircularProgressIndicator(color: Color(0xFF8FA67A)),
                     )
                   : _error != null
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(
-                                Icons.error_outline,
-                                size: 48,
-                                color: Color(0xFFE57373),
-                              ),
+                              const Icon(Icons.error_outline,
+                                  size: 48, color: Color(0xFFE57373)),
                               const SizedBox(height: 16),
                               Text(
                                 _error!,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF888888),
-                                ),
+                                    fontSize: 14, color: Color(0xFF888888)),
                               ),
                               const SizedBox(height: 16),
                               ElevatedButton(
@@ -262,18 +295,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.no_meals_outlined,
-                                    size: 48,
-                                    color: Color(0xFFCCC0B8),
-                                  ),
+                                  const Icon(Icons.no_meals_outlined,
+                                      size: 48, color: Color(0xFFCCC0B8)),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'No ${_categories[_selectedCategory]} recipes yet',
+                                    _searchQuery.isNotEmpty
+                                        ? 'No results for "$_searchQuery"'
+                                        : 'No ${_categories[_selectedCategory]} recipes yet',
                                     style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF888888),
-                                    ),
+                                        fontSize: 14, color: Color(0xFF888888)),
                                   ),
                                 ],
                               ),
@@ -284,25 +314,22 @@ class _HomeScreenState extends State<HomeScreen> {
                               itemBuilder: (context, index) {
                                 final targetRecipe = _filteredRecipes[index];
                                 return RecipeCard(
-                                  recipe: _filteredRecipes[index],
-                                  onTap: () => _openRecipe(_filteredRecipes[index]),
-                                  onRatingTap: () {
-                                          // Check authentication
-                                          if (FirebaseAuth.instance.currentUser == null) {
-                                            
-                                            // ─── Find your existing MainScreenState and use its method! ───
-                                            final mainScreenState = context.findAncestorStateOfType<MainScreenState>();
-                                            mainScreenState?.showLoginRequiredDialog();
-                                            
-                                          } else {
-                                            // If logged in, show the sheet like normal
-                                            RateRecipeSheet.show(context, targetRecipe);
-                                          }
-                                  },
-                                  onTwistTap: () {
-                                    AddTwistPage.show(context, targetRecipe);
-                                  },
-                                );
+  recipe: targetRecipe,
+  isOwner: FirebaseAuth.instance.currentUser?.uid == targetRecipe.userId,
+  onTap: () => _openRecipe(targetRecipe),
+  onRatingTap: () {
+    if (FirebaseAuth.instance.currentUser == null) {
+      final mainScreenState =
+          context.findAncestorStateOfType<MainScreenState>();
+      mainScreenState?.showLoginRequiredDialog();
+    } else {
+      RateRecipeSheet.show(context, targetRecipe);
+    }
+  },
+  onTwistTap: () {
+    AddTwistPage.show(context, targetRecipe);
+  },
+);
                               },
                             ),
             ),

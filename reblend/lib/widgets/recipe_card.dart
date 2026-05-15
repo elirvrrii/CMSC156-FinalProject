@@ -9,6 +9,7 @@ class RecipeCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onRatingTap;
   final VoidCallback? onTwistTap;
+  final bool isOwner; 
 
   const RecipeCard({
     super.key,
@@ -16,6 +17,7 @@ class RecipeCard extends StatelessWidget {
     required this.onTap,
     this.onRatingTap,
     this.onTwistTap,
+    this.isOwner = false,
   });
 
   @override
@@ -39,53 +41,54 @@ class RecipeCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image with action buttons
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: _buildRecipeImage(recipe.imageUrl),
-                ),
-                // Action icons top-right
-                Positioned(
-                  top: 10,
-                  right: 12,
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: onRatingTap,
-                        child: _IconButton(icon: Icons.star_border_rounded),
-                      ),
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: onTwistTap,
-                        child: _IconButton(icon: Icons.blender_outlined),
-                      ),
-                    ],
-                  ),
-                ),
-                // Twist badge (optional)
-                if (recipe.hasTwist)
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFC8956C),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        'Twist',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+           Stack(
+  children: [
+    ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      child: _buildRecipeImage(recipe.imageUrl),
+    ),
+    // Action icons top-right
+    if (!isOwner)                              // ← add this
+      Positioned(
+        top: 10,
+        right: 12,
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: onRatingTap,
+              child: _IconButton(icon: Icons.star_border_rounded),
             ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onTwistTap,
+              child: _IconButton(icon: Icons.blender_outlined),
+            ),
+          ],
+        ),
+      ),
+    // Twist badge (optional)
+    if (recipe.hasTwist)
+      Positioned(
+        bottom: 12,
+        right: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFC8956C),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text(
+            'Twist',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+  ],
+),
             // Info row
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),

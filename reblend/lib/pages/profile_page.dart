@@ -26,6 +26,13 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
     _tabController = TabController(length: 4, vsync: this);
   }
 
+  String _formatRating(dynamic value) {
+  if (value == null) return '—';
+  final parsed = (value is num) ? value.toDouble() : double.tryParse(value.toString());
+  if (parsed == null || parsed == 0.0) return '—';
+  return parsed.toStringAsFixed(1);
+}
+
   Future<void> _handleLogout() async {
     await FirebaseAuth.instance.signOut();
     // AuthGate will see the logout and automatically switch to the LoginPage
@@ -90,26 +97,27 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                 const SizedBox(height: 16),
 
                 // ─── Stats Row ─────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _statBox(
-                        "Recipes",
-                        (userData['recipe_count'] ?? 0).toString(),
-                      ),
-                      _statBox(
-                        "Twists",
-                        (userData['twist_count'] ?? 0).toString(),
-                      ),
-                      _statBox(
-                        "Rating",
-                        (userData['avg_rating'] ?? 0.0).toString(),
-                      ),
-                    ],
-                  ),
-                ),
+                // ─── Stats Row ─────────────────────────────
+Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 20),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      _statBox(
+        "Recipes",
+        (userData['recipe_count'] ?? 0).toString(),
+      ),
+      _statBox(
+        "Twists",
+        (userData['twist_count'] ?? 0).toString(),
+      ),
+      _statBox(
+        "Rating",
+        _formatRating(userData['avg_rating']),
+      ),
+    ],
+  ),
+),
 
                 const SizedBox(height: 16),
 
@@ -133,7 +141,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                     controller: _tabController,
                     children: [
                       _buildMyRecipes(),
-                      _buildPlaceholder("Your Twists List"),
+                      _buildMyTwists(),
                       _buildSettings(),
                       _buildLogout(context),
                     ],
@@ -148,52 +156,99 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   }
 
   Widget _buildMyRecipes() {
-    return FutureBuilder<List<Recipe>>(
-      // Fetch all recipes from your service
-      future: _recipeService.getAllRecipes(), 
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Color(0xFF8FA67A)));
-        }
+  return FutureBuilder<List<Recipe>>(
+    future: _recipeService.getRecipesByUserId(userId),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: Color(0xFF8FA67A)));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Text("Error loading recipes: ${snapshot.error}"));
+      }
 
-        if (snapshot.hasError) {
-          return Center(child: Text("Error loading recipes: ${snapshot.error}"));
-        }
+      final myRecipes = snapshot.data
+              ?.where((r) => !r.hasTwist)
+              .toList() ??
+          [];
 
-        // Filter recipes to only show those belonging to the current user
-        // and ensuring they aren't "twists" (if you want only original recipes here)
-        final myRecipes = snapshot.data?.where((r) => r.userId == userId && !r.hasTwist).toList() ?? [];
-
-        if (myRecipes.isEmpty) {
-          return const Center(
-            child: Text("You haven't posted any recipes yet.", 
-            style: TextStyle(color: Colors.grey))
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: myRecipes.length,
-          itemBuilder: (context, index) {
-            final recipe = myRecipes[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: RecipeCard(
-                recipe: recipe,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RecipeDetailPage(recipe: recipe),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
+      if (myRecipes.isEmpty) {
+        return const Center(
+          child: Text(
+            "You haven't posted any recipes yet.",
+            style: TextStyle(color: Colors.grey),
+          ),
         );
-      },
-    );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: myRecipes.length,
+        itemBuilder: (context, index) {
+          final recipe = myRecipes[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: RecipeCard(
+              recipe: recipe,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecipeDetailPage(recipe: recipe),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _buildMyTwists() {
+  return FutureBuilder<List<Recipe>>(
+    future: _recipeService.getRecipesByUserId(userId),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator(color: Color(0xFF8FA67A)));
+      }
+      if (snapshot.hasError) {
+        return Center(child: Text("Error loading twists: ${snapshot.error}"));
+      }
+
+      final myTwists = snapshot.data
+              ?.where((r) => r.hasTwist)
+              .toList() ??
+          [];
+
+      if (myTwists.isEmpty) {
+        return const Center(
+          child: Text(
+            "You haven't posted any twists yet.",
+            style: TextStyle(color: Colors.grey),
+          ),
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: myTwists.length,
+        itemBuilder: (context, index) {
+          final recipe = myTwists[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: RecipeCard(
+              recipe: recipe,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RecipeDetailPage(recipe: recipe),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }
 
   // ─── Stats Widget ─────────────────────────────
@@ -237,15 +292,89 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
 
   // ─── Logout Tab ─────────────────────────────
   Widget _buildLogout(BuildContext context) {
-    return Center(
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.redAccent,
-          foregroundColor: Colors.white,
+  return ListView(
+    padding: const EdgeInsets.all(20),
+    children: [
+      const SizedBox(height: 12),
+
+      // ─── Logout List Tile ─────────────────────────────
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        onPressed: _handleLogout,
-        child: const Text("Log Out"),
+        child: ListTile(
+          onTap: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: const Text(
+                  "Log out?",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                content: const Text(
+                  "You'll need to sign in again to access your recipes.",
+                  style: TextStyle(color: Colors.grey),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text(
+                      "Log out",
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true) _handleLogout();
+          },
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEDED),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          child: const Icon(Icons.logout_rounded,
+              color: Colors.redAccent, size: 20),
+          ),
+          title: const Text(
+            "Log Out",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF2E2E2E),
+            ),
+          ),
+          subtitle: const Text(
+            "Sign out of your account",
+            style: TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded,
+              color: Color(0xFFCCCCCC)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ),
-    );
-  }
+    ],
+  );
+}
 }
