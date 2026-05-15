@@ -161,12 +161,16 @@ class Recipe {
     final rawIngredients = data['ingredients'] as List<dynamic>? ?? const [];
     final rawSteps = data['steps'] as List<dynamic>? ?? const [];
     final rawReviews = data['reviews'] as List<dynamic>? ?? const [];
+    final rawAuthor = data['author'];
+    final safeAuthor = rawAuthor is String && rawAuthor.trim().isNotEmpty
+        ? rawAuthor.trim()
+        : 'user';
 
     return Recipe(
       id: id,
       name: data['name'] ?? '',
       category: data['category'] ?? '',
-      author: data['author'] ?? 'Unknown',
+      author: safeAuthor,
       userId: data['userId'],
       date: data['date'] ?? '',
       rating: (data['rating'] ?? 0.0).toDouble(),

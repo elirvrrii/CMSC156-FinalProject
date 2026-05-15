@@ -22,6 +22,8 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authorName = recipe.author.trim().isNotEmpty ? recipe.author.trim() : 'user';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -66,23 +68,22 @@ class RecipeCard extends StatelessWidget {
           ],
         ),
       ),
-    // Twist badge (optional)
     if (recipe.hasTwist)
       Positioned(
-        bottom: 12,
-        right: 12,
+        top: 12,
+        left: 12,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFC8956C),
-            borderRadius: BorderRadius.circular(8),
+            color: const Color(0xFFC8956C).withOpacity(0.92),
+            borderRadius: BorderRadius.circular(999),
           ),
-          child: const Text(
-            'Twist',
-            style: TextStyle(
+          child: Text(
+            'Twisted by @$authorName',
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w600,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
         ),
@@ -110,7 +111,7 @@ class RecipeCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '@${recipe.author}',
+                            '@$authorName',
                             style: const TextStyle(
                               fontSize: 13,
                               color: Color(0xFFADADAD),

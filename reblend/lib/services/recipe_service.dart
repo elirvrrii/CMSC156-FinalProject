@@ -7,6 +7,55 @@ class RecipeService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   static const String _recipesCollection = 'recipes';
 
+  bool _isPlaceholderName(String value) {
+    final lower = value.trim().toLowerCase();
+    return lower == 'user' || lower == 'chef' || lower == 'unknown';
+  }
+
+  Future<String> _resolvedAuthorName({String? author, String? uid}) async {
+    final provided = author?.trim();
+    if (provided != null && provided.isNotEmpty && !_isPlaceholderName(provided)) {
+      return provided;
+    }
+
+    final resolvedUid = uid ?? _auth.currentUser?.uid;
+    if (resolvedUid != null) {
+      try {
+        final userDoc = await _firestore.collection('users').doc(resolvedUid).get();
+        final userData = userDoc.data();
+        if (userData != null) {
+          for (final key in ['display_name', 'username', 'displayName']) {
+            final candidate = (userData[key] as String?)?.trim();
+            if (candidate != null && candidate.isNotEmpty) {
+              return candidate;
+            }
+          }
+          final email = (userData['email'] as String?)?.trim();
+          if (email != null && email.contains('@')) {
+            final emailPrefix = email.split('@')[0].trim();
+            if (emailPrefix.isNotEmpty) {
+              return emailPrefix;
+            }
+          }
+        }
+      } catch (_) {
+        // Fall through to auth-based fallback below.
+      }
+    }
+
+    final authDisplayName = _auth.currentUser?.displayName?.trim();
+    if (authDisplayName != null && authDisplayName.isNotEmpty) {
+      return authDisplayName;
+    }
+
+    final emailPrefix = _auth.currentUser?.email?.split('@')[0].trim();
+    if (emailPrefix != null && emailPrefix.isNotEmpty) {
+      return emailPrefix;
+    }
+
+    return 'user';
+  }
+
   /// Add a new recipe to Firestore
   Future<String> addRecipe({
     required String name,
@@ -25,8 +74,7 @@ class RecipeService {
 
       // Get current user if userId not provided
       final uid = userId ?? _auth.currentUser?.uid;
-      final authorName =
-          author ?? _auth.currentUser?.email?.split('@')[0] ?? 'user';
+      final authorName = await _resolvedAuthorName(author: author, uid: uid);
 
       final recipeData = {
         'name': name,
@@ -150,7 +198,7 @@ class RecipeService {
     required String category,
     required String imageUrl,
     required int cookTimeMinutes,
-    required String author,
+    String? author,
     String? userId,
   }) async {
     try {
@@ -166,7 +214,7 @@ class RecipeService {
       final dateStr =
           '${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}/${now.year}';
       final uid = userId ?? _auth.currentUser?.uid;
-      final authorName = author;
+        final authorName = await _resolvedAuthorName(author: author, uid: uid);
 
       final twistData = {
         'name': twistName,
@@ -262,7 +310,9 @@ class RecipeService {
       id: doc.id,
       name: data['name'] ?? '',
       category: data['category'] ?? '',
-      author: data['author'] ?? 'Unknown',
+        author: (data['author'] is String && (data['author'] as String).trim().isNotEmpty)
+          ? (data['author'] as String).trim()
+          : 'user',
       userId: data['userId'],
       date: data['date'] ?? '',
       rating: (data['rating'] ?? 0).toDouble(),

@@ -601,7 +601,6 @@ class _AddTwistPageState extends State<AddTwistPage> {
         category: widget.originalRecipe.category,
         imageUrl: widget.originalRecipe.imageUrl,
         cookTimeMinutes: widget.originalRecipe.cookTimeMinutes,
-        author: user?.displayName ?? user?.email?.split('@').first ?? 'User',
         userId: user?.uid,
       );
 
