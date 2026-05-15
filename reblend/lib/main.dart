@@ -4,7 +4,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const RecipeApp());
 }
 
@@ -22,7 +27,7 @@ class RecipeApp extends StatelessWidget {
           seedColor: const Color(0xFF8FA67A),
           brightness: Brightness.light,
         ),
-        fontFamily: 'Georgia', // fallback serif
+        fontFamily: 'Georgia',
         scaffoldBackgroundColor: const Color(0xFFF5F1EC),
       ),
       home: const MainScreen(),

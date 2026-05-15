@@ -63,6 +63,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '890575293192',
     projectId: 'reblend-4d60b',
     storageBucket: 'reblend-4d60b.firebasestorage.app',
+    iosClientId: '890575293192-j5k5sp72qs4ps9eqrvpnrg7de1ovkii8.apps.googleusercontent.com',
     iosBundleId: 'com.example.reblend',
   );
 
@@ -72,6 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '890575293192',
     projectId: 'reblend-4d60b',
     storageBucket: 'reblend-4d60b.firebasestorage.app',
+    iosClientId: '890575293192-j5k5sp72qs4ps9eqrvpnrg7de1ovkii8.apps.googleusercontent.com',
     iosBundleId: 'com.example.reblend',
   );
 
@@ -83,4 +85,5 @@ class DefaultFirebaseOptions {
     authDomain: 'reblend-4d60b.firebaseapp.com',
     storageBucket: 'reblend-4d60b.firebasestorage.app',
   );
+
 }

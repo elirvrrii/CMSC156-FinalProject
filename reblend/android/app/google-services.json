@@ -12,7 +12,12 @@
           "package_name": "com.example.reblend"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "890575293192-uhn179gpgj2kkva0t1lsb7kl433kinl3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCkv43SmJAH3naxk_B6_GvktKRtjn261P4"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "890575293192-uhn179gpgj2kkva0t1lsb7kl433kinl3.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "890575293192-j5k5sp72qs4ps9eqrvpnrg7de1ovkii8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.reblend"
+              }
+            }
+          ]
         }
       }
     }
