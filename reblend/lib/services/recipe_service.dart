@@ -158,6 +158,9 @@ class RecipeService {
       if (parentRecipe == null) {
         throw Exception('Parent recipe not found');
       }
+      if (parentRecipe.hasTwist) {
+        throw Exception('Twists can only be added to original recipes');
+      }
 
       final now = DateTime.now();
       final dateStr =
