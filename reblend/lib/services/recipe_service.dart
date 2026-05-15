@@ -176,6 +176,7 @@ class RecipeService {
         'rating': 0.0,
         'reviewCount': 0,
         'hasTwist': true,
+        'parentUserId': parentRecipe.userId,   
         'parentRecipeId': parentRecipeId,
         'parentRecipeName': parentRecipe.name,
         'parentRecipeAuthor': parentRecipe.author,
@@ -399,4 +400,10 @@ class RecipeService {
       );
     }).toList();
   }
+
+  Future<void> validateTwist(String recipeId) async {
+  await _firestore.collection(_recipesCollection).doc(recipeId).update({
+    'validated': true,
+  });
+}
 }

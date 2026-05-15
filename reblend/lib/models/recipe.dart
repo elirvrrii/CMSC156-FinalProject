@@ -115,12 +115,14 @@ class Recipe {
   final String imageUrl;
   final bool hasTwist;
   final int cookTimeMinutes;
+  final String? parentUserId;
   final String? parentRecipeId;
   final String? parentRecipeName;
   final String? parentRecipeAuthor;
   final List<RecipeIngredient> ingredients;
   final List<RecipeStep> steps;
   final List<RecipeReview> reviews;
+  final bool validated;
 
   const Recipe({
     required this.id,
@@ -134,12 +136,14 @@ class Recipe {
     required this.reviewCount,
     required this.imageUrl,
     this.hasTwist = false,
+    this.parentUserId,
     this.parentRecipeId,
     this.parentRecipeName,
     this.parentRecipeAuthor,
     required this.ingredients,
     required this.steps,
     required this.reviews,
+    this.validated = false,
   });
 
   // Build a Recipe from a Firestore document payload.
@@ -173,6 +177,7 @@ class Recipe {
           .whereType<Map>()
           .map((review) => RecipeReview.fromMap(Map<String, dynamic>.from(review)))
           .toList(),
+      validated: data['validated'] ?? false,
     );
   }
 }

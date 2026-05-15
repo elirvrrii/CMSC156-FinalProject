@@ -60,7 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Recipe> get _filteredRecipes {
     final selectedCat = _categories[_selectedCategory];
-    final byCategory = _allRecipes.where((r) => r.category == selectedCat);
+    final byCategory = _allRecipes.where((r) =>
+    r.category == selectedCat &&
+    (!r.hasTwist || r.validated == true)   // hide unvalidated twists
+  );
 
     final query = _searchQuery.trim().toLowerCase();
     if (query.isEmpty) return byCategory.toList();
