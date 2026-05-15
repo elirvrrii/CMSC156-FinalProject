@@ -18,14 +18,6 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomeScreen(),
-    MyRecipesScreen(),
-    AddRecipePage(),
-    ValidateTwistsPage(),
-    ProfilePage(),
-  ];
-
   // Helper to check login status
   bool get _isLoggedIn => FirebaseAuth.instance.currentUser != null;
 
@@ -89,6 +81,14 @@ class MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _pages = const [
+      HomeScreen(),
+      MyRecipesScreen(),
+      AddRecipePage(),
+      ValidateTwistsPage(),
+      ProfilePage(),
+    ];
+
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavBar(
