@@ -18,6 +18,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  // ================= LOGIN =================
   Future<void> login() async {
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
@@ -39,10 +40,13 @@ class _LoginPageState extends State<LoginPage> {
     } on FirebaseAuthException catch (e) {
       showMessage(e.message ?? "Login failed");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
+  // ================= GOOGLE SIGN IN =================
   Future<void> signInWithGoogle() async {
     try {
       setState(() => _isLoading = true);
@@ -50,7 +54,10 @@ class _LoginPageState extends State<LoginPage> {
       final GoogleSignInAccount? googleUser =
           await GoogleSignIn().signIn();
 
-      if (googleUser == null) return;
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -69,6 +76,7 @@ class _LoginPageState extends State<LoginPage> {
 
       final snapshot = await userDoc.get();
 
+      // Create user document if first time login
       if (!snapshot.exists) {
         await userDoc.set({
           'uid': userCredential.user!.uid,
@@ -85,18 +93,42 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      showMessage(e.toString());
+      showMessage("Google Sign-In Failed");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  // ================= RESET PASSWORD =================
+  Future<void> resetPassword() async {
+    if (_emailController.text.trim().isEmpty) {
+      showMessage("Please enter your email first");
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: _emailController.text.trim(),
+      );
+
+      showMessage("Password reset email sent!");
+    } on FirebaseAuthException catch (e) {
+      showMessage(e.message ?? "Failed to send reset email");
+    }
   }
 
+  // ================= SNACKBAR =================
+  void showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+  // ================= CUSTOM INPUT =================
   InputDecoration customInput({
     required String hint,
     required IconData icon,
@@ -117,9 +149,17 @@ class _LoginPageState extends State<LoginPage> {
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(color: Colors.orange.shade100),
       ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(
+          color: Colors.orange,
+          width: 1.5,
+        ),
+      ),
     );
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,7 +202,7 @@ class _LoginPageState extends State<LoginPage> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85),
+                  color: Colors.white.withOpacity(0.90),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Column(
@@ -177,8 +217,10 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 25),
 
+                    // EMAIL
                     TextField(
                       controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: customInput(
                         hint: "Email Address",
                         icon: Icons.email_outlined,
@@ -187,6 +229,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 18),
 
+                    // PASSWORD
                     TextField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -209,10 +252,11 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
+                    // FORGOT PASSWORD
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: resetPassword,
                         child: const Text(
                           "Forgot Password?",
                           style: TextStyle(
@@ -222,6 +266,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
 
+                    const SizedBox(height: 10),
+
+                    // LOGIN BUTTON
                     SizedBox(
                       width: double.infinity,
                       height: 55,
@@ -272,6 +319,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 25),
 
+                    // GOOGLE SIGN IN
                     SizedBox(
                       width: double.infinity,
                       height: 55,
@@ -303,6 +351,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 25),
 
+                    // REGISTER
                     Row(
                       mainAxisAlignment:
                           MainAxisAlignment.center,
