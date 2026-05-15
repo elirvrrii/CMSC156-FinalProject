@@ -48,7 +48,7 @@ class RecipeCard extends StatelessWidget {
       child: _buildRecipeImage(recipe.imageUrl),
     ),
     // Action icons top-right
-    if (!isOwner)                              // ← add this
+    if (!isOwner && !recipe.hasTwist)
       Positioned(
         top: 10,
         right: 12,

@@ -330,7 +330,9 @@ IconButton(
     }
   },
   onTwistTap: () {
-    AddTwistPage.show(context, targetRecipe);
+    if (!targetRecipe.hasTwist) {
+      AddTwistPage.show(context, targetRecipe);
+    }
   },
 );
                               },
